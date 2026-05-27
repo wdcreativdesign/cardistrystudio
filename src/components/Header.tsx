@@ -1,4 +1,5 @@
-import { Download, RotateCcw } from 'lucide-react'
+import { Download, RotateCcw, LogOut } from 'lucide-react'
+import { supabase } from '@/lib/supabase'
 
 interface HeaderProps {
   onExport:  () => void
@@ -6,6 +7,10 @@ interface HeaderProps {
 }
 
 export function Header({ onExport, onRestart }: HeaderProps) {
+  async function handleSignOut() {
+    await supabase.auth.signOut()
+  }
+
   return (
     <header className="absolute top-0 left-0 right-0 z-20 flex items-center justify-between px-6 py-4 pointer-events-none">
       {/* Logo */}
@@ -20,6 +25,15 @@ export function Header({ onExport, onRestart }: HeaderProps) {
 
       {/* Actions */}
       <div className="pointer-events-auto flex items-center gap-2">
+        {/* Sign out */}
+        <button
+          onClick={handleSignOut}
+          title="Sign out"
+          className="flex items-center justify-center w-9 h-9 border border-black/12 bg-white/70 hover:bg-white text-black/35 hover:text-black/60 rounded-xl shadow-sm backdrop-blur-sm transition-all active:scale-[0.97]"
+        >
+          <LogOut className="w-3.5 h-3.5" />
+        </button>
+
         {/* Restart */}
         <button
           onClick={onRestart}
