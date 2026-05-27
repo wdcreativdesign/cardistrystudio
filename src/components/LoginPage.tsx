@@ -12,7 +12,7 @@ function GoogleIcon() {
   )
 }
 
-export function LoginPage() {
+export function LoginPage({ onDevSkip }: { onDevSkip?: () => void }) {
   const [email,   setEmail]   = useState('')
   const [loading, setLoading] = useState<'magic' | 'google' | null>(null)
   const [sent,    setSent]    = useState(false)
@@ -49,8 +49,8 @@ export function LoginPage() {
         {/* Logo */}
         <div className="text-center mb-8">
           <span className="text-[22px] tracking-[-0.02em] text-[#1a1a1a]">
-            <span className="font-semibold">Floa</span>
-            <span className="font-light">CardStudio<sup className="text-[11px] align-super">™</sup></span>
+            <span className="font-semibold">Cardistry</span>
+            <span className="font-normal">Studio<sup className="text-[11px] align-super">™</sup></span>
           </span>
           <p className="text-[13px] text-black/35 mt-1.5">3D Card Visualizer</p>
         </div>
@@ -129,8 +129,17 @@ export function LoginPage() {
         </div>
 
         <p className="text-center text-[10px] text-black/20 mt-4">
-          FloaCardStudio · 3D Card Visualizer
+          CardistryStudio · 3D Card Visualizer
         </p>
+
+        {onDevSkip && (
+          <button
+            onClick={onDevSkip}
+            className="block mx-auto mt-3 text-[10px] text-black/20 hover:text-black/40 transition-colors underline"
+          >
+            [DEV] Skip auth
+          </button>
+        )}
       </div>
     </div>
   )

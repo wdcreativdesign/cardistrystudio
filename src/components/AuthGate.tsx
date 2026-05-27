@@ -30,7 +30,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
     )
   }
 
-  if (!user) return <LoginPage />
+  if (!user) return <LoginPage onDevSkip={import.meta.env.DEV ? () => setUser({} as User) : undefined} />
 
   return <>{children}</>
 }

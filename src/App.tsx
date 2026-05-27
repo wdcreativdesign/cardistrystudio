@@ -224,7 +224,7 @@ export default function App() {
       const blob = new Blob([svgContent], { type: 'image/svg+xml' })
       const url  = URL.createObjectURL(blob)
       const link = document.createElement('a')
-      link.download = 'floacardstudio-export.svg'
+      link.download = 'caistrystudio-export.svg'
       link.href = url
       link.click()
       URL.revokeObjectURL(url)
@@ -237,7 +237,7 @@ export default function App() {
 
     const ext  = opts.background === 'transparent' ? 'png' : opts.format
     const link = document.createElement('a')
-    link.download = `floacardstudio-export.${ext}`
+    link.download = `caistrystudio-export.${ext}`
     link.href = dataURL
     link.click()
   }, [])

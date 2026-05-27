@@ -439,7 +439,7 @@ export function ControlPanel({ settings, onChange, onReset }: ControlPanelProps)
 
       <div className="px-5 pb-5 pt-2">
         <p className="text-[10px] text-black/20 text-center tracking-wide">
-          FloaCardStudio · 3D Card Viewer
+          CardistryStudio · 3D Card Viewer
         </p>
       </div>
     </aside>

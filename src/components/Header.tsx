@@ -16,9 +16,9 @@ export function Header({ onExport, onRestart }: HeaderProps) {
       {/* Logo */}
       <div className="flex items-center pointer-events-auto">
         <span className="text-[17px] tracking-[-0.02em] text-[#1a1a1a]">
-          <span className="font-semibold">Floa</span>
-          <span className="font-light">
-            CardStudio<sup className="text-[10px] align-super">™</sup>
+          <span className="font-semibold">Cardistry</span>
+          <span className="font-normal">
+            Studio<sup className="text-[10px] align-super">™</sup>
           </span>
         </span>
       </div>
