@@ -72,6 +72,34 @@ function buildGeos(w: number, h: number) {
 }
 
 
+/* ─── Loader universel PNG / JPG / SVG ──────────────────────────────
+   Passe toujours par un canvas intermédiaire :
+   • raster → taille naturelle (plafonnée à 4096 px)
+   • SVG sans dimensions explicites → rendu 2048 × 2048
+─────────────────────────────────────────────────────────────────── */
+function loadImageAsTexture(
+  src: string,
+  onDone: (tex: THREE.Texture) => void,
+  signal: { cancelled: boolean }
+) {
+  const img = new Image()
+  img.onload = () => {
+    if (signal.cancelled) return
+    const w = img.naturalWidth  > 0 ? Math.min(img.naturalWidth,  4096) : 2048
+    const h = img.naturalHeight > 0 ? Math.min(img.naturalHeight, 4096) : 2048
+    const canvas = document.createElement('canvas')
+    canvas.width = w; canvas.height = h
+    canvas.getContext('2d')!.drawImage(img, 0, 0, w, h)
+    const tex = new THREE.CanvasTexture(canvas)
+    tex.colorSpace      = THREE.SRGBColorSpace
+    tex.minFilter       = THREE.LinearMipmapLinearFilter
+    tex.generateMipmaps = true
+    tex.needsUpdate     = true
+    onDone(tex)
+  }
+  img.src = src
+}
+
 /* ─── Card3D ─────────────────────────────────────────────────────── */
 interface Card3DProps {
   settings: CardSettings
@@ -111,39 +139,21 @@ export function Card3D({ settings, tilt }: Card3DProps) {
   const [backTex,  setBackTex]  = useState<THREE.Texture | null>(null)
 
   useEffect(() => {
-    if (!settings.frontImage) {
-      setFrontTex(prev => { prev?.dispose(); return null })
-      return
-    }
-    let cancelled = false
-    new THREE.TextureLoader().load(settings.frontImage, (tex) => {
-      if (cancelled) { tex.dispose(); return }
-      tex.colorSpace      = THREE.SRGBColorSpace
-      tex.minFilter       = THREE.LinearMipmapLinearFilter
-      tex.generateMipmaps = true
-      tex.flipY           = true
-      tex.needsUpdate     = true
+    if (!settings.frontImage) { setFrontTex(prev => { prev?.dispose(); return null }); return }
+    const signal = { cancelled: false }
+    loadImageAsTexture(settings.frontImage, (tex) => {
       setFrontTex(prev => { prev?.dispose(); return tex })
-    })
-    return () => { cancelled = true }
+    }, signal)
+    return () => { signal.cancelled = true }
   }, [settings.frontImage])
 
   useEffect(() => {
-    if (!settings.backImage) {
-      setBackTex(prev => { prev?.dispose(); return null })
-      return
-    }
-    let cancelled = false
-    new THREE.TextureLoader().load(settings.backImage, (tex) => {
-      if (cancelled) { tex.dispose(); return }
-      tex.colorSpace      = THREE.SRGBColorSpace
-      tex.minFilter       = THREE.LinearMipmapLinearFilter
-      tex.generateMipmaps = true
-      tex.flipY           = true
-      tex.needsUpdate     = true
+    if (!settings.backImage) { setBackTex(prev => { prev?.dispose(); return null }); return }
+    const signal = { cancelled: false }
+    loadImageAsTexture(settings.backImage, (tex) => {
       setBackTex(prev => { prev?.dispose(); return tex })
-    })
-    return () => { cancelled = true }
+    }, signal)
+    return () => { signal.cancelled = true }
   }, [settings.backImage])
 
   /* ── Animation frame ─────────────────────────────────────────── */

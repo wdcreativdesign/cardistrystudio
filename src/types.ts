@@ -15,6 +15,12 @@ export interface CardSettings {
   lightIntensity: number     // 0 → 2
 }
 
+export interface CardPage {
+  id: string
+  name: string
+  settings: CardSettings
+}
+
 export interface FinishConfig {
   label: string
   metalness: number

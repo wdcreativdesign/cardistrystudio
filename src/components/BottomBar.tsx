@@ -1,7 +1,7 @@
 import { cn } from '@/lib/utils'
 import { type CardSettings, type Finish, type Orientation } from '@/types'
 
-/* ── Icônes carte (SVG inline pour la précision) ─────────────────── */
+/* ── Card icons ──────────────────────────────────────────────────── */
 function HorizontalCardIcon({ active }: { active: boolean }) {
   return (
     <svg width="22" height="14" viewBox="0 0 22 14" fill="none">
@@ -38,7 +38,7 @@ const FINISHES: { key: Finish; label: string }[] = [
   { key: 'matte',    label: 'Matte'   },
 ]
 
-/* ── Pill générique ──────────────────────────────────────────────── */
+/* ── Pill wrapper ────────────────────────────────────────────────── */
 function Pill({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex items-center gap-1 bg-white/80 backdrop-blur-xl border border-black/8 rounded-2xl px-1.5 py-1.5 shadow-xl shadow-black/10">
@@ -47,7 +47,7 @@ function Pill({ children }: { children: React.ReactNode }) {
   )
 }
 
-/* ── Bouton générique ────────────────────────────────────────────── */
+/* ── Pill button ─────────────────────────────────────────────────── */
 function PillBtn({
   active, onClick, children,
 }: {
@@ -81,7 +81,7 @@ export function BottomBar({ settings, onChange }: BottomBarProps) {
     <div className="absolute bottom-7 left-1/2 -translate-x-1/2 z-20 pointer-events-none">
       <div className="pointer-events-auto flex items-center gap-3">
 
-        {/* ── Bloc orientation ── */}
+        {/* Orientation */}
         <Pill>
           {ORIENTATIONS.map((o) => {
             const active = settings.orientation === o.key
@@ -99,10 +99,10 @@ export function BottomBar({ settings, onChange }: BottomBarProps) {
           })}
         </Pill>
 
-        {/* ── Séparateur visuel ── */}
+        {/* Visual separator */}
         <div className="w-px h-6 bg-black/12 rounded-full" />
 
-        {/* ── Bloc finition ── */}
+        {/* Finish */}
         <Pill>
           {FINISHES.map((f) => {
             const active = settings.finish === f.key
