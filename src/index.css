@@ -1,0 +1,50 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 220 20% 97%;
+    --foreground: 220 15% 10%;
+    --muted: 220 14% 93%;
+    --muted-foreground: 220 10% 50%;
+    --border: 220 13% 88%;
+    --input: 220 13% 91%;
+    --ring: 220 10% 30%;
+    --primary: 220 15% 10%;
+    --primary-foreground: 0 0% 98%;
+    --secondary: 220 14% 93%;
+    --secondary-foreground: 220 15% 15%;
+    --accent: 220 14% 91%;
+    --accent-foreground: 220 15% 12%;
+    --radius: 0.65rem;
+  }
+}
+
+@layer base {
+  * { @apply border-border; }
+  body {
+    @apply bg-background text-foreground;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    overflow: hidden;
+  }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.12); border-radius: 2px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,0.2); }
+
+/* Cursor for canvas drag */
+.canvas-drag { cursor: grab; }
+.canvas-drag:active { cursor: grabbing; }
+
+/* File drop zone */
+.drop-zone {
+  transition: border-color 0.2s, background-color 0.2s;
+}
+.drop-zone.drag-over {
+  border-color: rgba(0,0,0,0.3) !important;
+  background-color: rgba(0,0,0,0.04) !important;
+}
