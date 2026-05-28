@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback, useEffect } from 'react'
+import { useState, useRef, useCallback, useEffect, useMemo } from 'react'
 import * as THREE from 'three'
 import { AlertTriangle } from 'lucide-react'
 import { CardScene } from './components/CardScene'
@@ -54,6 +54,7 @@ export default function App() {
   const [tilt, setTilt]                 = useState({ x: 0, y: 0 })
   const [altHeld, setAltHeld]           = useState(false)
   const [pendingOrientation, setPendingOrientation] = useState<Orientation | null>(null)
+  const [showReloadConfirm, setShowReloadConfirm]   = useState(false)
 
   // Derive active page & its settings
   const activePage = pages.find((p) => p.id === activePageId) ?? pages[0]
@@ -159,6 +160,27 @@ export default function App() {
   const cancelOrientationChange = useCallback(() => {
     setPendingOrientation(null)
   }, [])
+
+  /* ── Pristine check — true when nothing has been changed ── */
+  const isPristine = useMemo(() => {
+    if (pages.length !== 1) return false
+    const s = pages[0].settings
+    if (s.frontImage || s.backImage) return false
+    const keys = [
+      'rotX','rotY','rotZ','zoom','posX','posY','posZ',
+      'finish','orientation','edgeColor','autoRotate','lightIntensity','bgColor',
+    ] as const
+    return keys.every((k) => (s[k] as unknown) === (DEFAULT_SETTINGS[k] as unknown))
+  }, [pages])
+
+  /* ── Logo click → reload (with guard if design is in progress) ── */
+  const handleLogoClick = useCallback(() => {
+    if (isPristine) {
+      window.location.reload()
+    } else {
+      setShowReloadConfirm(true)
+    }
+  }, [isPristine])
 
   /* ── Reset active page (keeps images, finish & orientation) ── */
   const handleReset = useCallback(() => {
@@ -443,6 +465,7 @@ export default function App() {
       <div className="flex-1 relative min-w-0">
         <Header
           onRestart={handleRestart}
+          onLogoClick={handleLogoClick}
           logoColor={contrastColor(settings.bgColor)}
         />
 
@@ -485,6 +508,45 @@ export default function App() {
 
       {/* ── Right control panel ── */}
       <ControlPanel settings={settings} displayCount={displayCount} onChange={handleChange} onReset={handleReset} onRandomize={handleRandomize} onExport={handleExport} />
+
+      {/* ── Reload confirmation dialog ── */}
+      {showReloadConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div
+            className="absolute inset-0 bg-black/25 backdrop-blur-[2px]"
+            onClick={() => setShowReloadConfirm(false)}
+          />
+          <div className="relative bg-white rounded-2xl shadow-2xl border border-black/[0.07] p-6 w-[360px] mx-4 animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex items-start gap-3.5 mb-5">
+              <div className="w-9 h-9 rounded-xl bg-amber-50 flex items-center justify-center flex-shrink-0 mt-0.5">
+                <AlertTriangle style={{ width: 18, height: 18 }} className="text-amber-500" />
+              </div>
+              <div>
+                <h3 className="text-[15px] font-semibold text-black/85 mb-1.5">
+                  Lose your progress?
+                </h3>
+                <p className="text-[13px] text-black/50 leading-relaxed">
+                  Refreshing will reset your current design. Any unsaved work will be lost.
+                </p>
+              </div>
+            </div>
+            <div className="flex gap-2.5 justify-end">
+              <button
+                onClick={() => setShowReloadConfirm(false)}
+                className="px-4 py-2 rounded-xl text-[13px] font-medium text-black/55 hover:text-black/80 border border-black/10 hover:bg-black/[0.04] transition-all"
+              >
+                Keep editing
+              </button>
+              <button
+                onClick={() => window.location.reload()}
+                className="px-4 py-2 rounded-xl text-[13px] font-medium bg-[#1a1a1a] hover:bg-[#2d2d2d] text-white transition-all active:scale-[0.97]"
+              >
+                Refresh anyway
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── Orientation warning dialog ── */}
       {pendingOrientation && (

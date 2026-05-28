@@ -4,11 +4,12 @@ import { FeedbackButton } from './FeedbackButton'
 import { cn } from '@/lib/utils'
 
 interface HeaderProps {
-  onRestart:  () => void
-  logoColor?: '#1a1a1a' | '#ffffff'
+  onRestart:    () => void
+  onLogoClick?: () => void
+  logoColor?:   '#1a1a1a' | '#ffffff'
 }
 
-export function Header({ onRestart, logoColor = '#1a1a1a' }: HeaderProps) {
+export function Header({ onRestart, onLogoClick, logoColor = '#1a1a1a' }: HeaderProps) {
   async function handleSignOut() {
     await supabase.auth.signOut()
   }
@@ -22,15 +23,16 @@ export function Header({ onRestart, logoColor = '#1a1a1a' }: HeaderProps) {
     <header className="absolute top-0 left-0 right-0 z-20 flex items-center justify-between px-6 py-4 pointer-events-none">
       {/* Logo */}
       <div className="flex items-center pointer-events-auto">
-        <span
-          className="text-[17px] tracking-[-0.02em] transition-colors duration-300"
+        <button
+          onClick={onLogoClick}
+          className="text-[17px] tracking-[-0.02em] transition-all duration-200 hover:opacity-60 active:scale-[0.97] cursor-pointer bg-transparent border-none p-0"
           style={{ color: logoColor }}
         >
           <span className="font-semibold">Cardistry</span>
           <span className="font-normal">
             Studio<sup className="text-[10px] align-super">™</sup>
           </span>
-        </span>
+        </button>
       </div>
 
       {/* Actions */}
