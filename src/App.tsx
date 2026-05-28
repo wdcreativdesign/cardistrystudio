@@ -20,7 +20,7 @@ const DEFAULT_SETTINGS: CardSettings = {
   posY: 0,
   posZ: 0,
   finish: 'metallic',
-  orientation: 'vertical',
+  orientation: 'horizontal',
   edgeColor: '#009FFF',
   frontImage: null,
   backImage: null,
