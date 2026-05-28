@@ -28,7 +28,6 @@ export function LoginPage({ onDevSkip }: { onDevSkip?: () => void }) {
       options: { emailRedirectTo: window.location.origin },
     })
     if (error) {
-      // Rate limit = link already sent, show success anyway
       if (error.message.toLowerCase().includes('rate')) setSent(true)
       else setError(error.message)
     } else {
@@ -48,104 +47,118 @@ export function LoginPage({ onDevSkip }: { onDevSkip?: () => void }) {
   }
 
   return (
-    <div className="flex h-screen w-screen items-center justify-center bg-[#f0f0f5]">
-      <div className="w-full max-w-[360px] mx-4">
+    <div className="flex h-screen w-screen overflow-hidden">
 
-        {/* Logo */}
-        <div className="text-center mb-8">
-          <span className="text-[22px] tracking-[-0.02em] text-[#1a1a1a]">
-            <span className="font-semibold">Cardistry</span>
-            <span className="font-normal">Studio<sup className="text-[11px] align-super">™</sup></span>
-          </span>
-          <p className="text-[13px] text-black/35 mt-1.5">3D Card Visualizer</p>
-        </div>
+      {/* ── Left — login ────────────────────────────────────────────── */}
+      <div className="w-1/2 flex flex-col items-center justify-center bg-[#f5f5f7] px-8">
+        <div className="w-full max-w-[340px]">
 
-        {/* Card */}
-        <div className="bg-white rounded-2xl border border-black/[0.07] shadow-xl shadow-black/[0.06] p-6">
-          {sent ? (
-            /* ── Confirmation ── */
-            <div className="text-center py-3">
-              <div className="w-12 h-12 rounded-2xl bg-black/[0.04] flex items-center justify-center mx-auto mb-4">
-                <svg className="w-5 h-5 text-black/40" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
-                </svg>
-              </div>
-              <h2 className="text-[15px] font-semibold text-black/85 mb-1.5">Check your inbox</h2>
-              <p className="text-[13px] text-black/45 leading-relaxed">
-                We sent a magic link to<br />
-                <span className="font-medium text-black/70">{email}</span>
-              </p>
-              <button
-                onClick={() => { setSent(false); setEmail('') }}
-                className="mt-4 text-[11px] text-black/30 hover:text-black/55 transition-colors underline"
-              >
-                Use a different email
-              </button>
-            </div>
-          ) : (
-            <>
-              <h2 className="text-[15px] font-semibold text-black/85 mb-0.5 text-center">Sign in</h2>
-              <p className="text-[12px] text-black/35 text-center mb-5">No password needed</p>
+          {/* Logo */}
+          <div className="mb-10 text-center">
+            <span className="text-[22px] tracking-[-0.02em] text-[#1a1a1a]">
+              <span className="font-semibold">Cardistry</span>
+              <span className="font-normal">Studio<sup className="text-[11px] align-super">™</sup></span>
+            </span>
+            <p className="text-[13px] text-black/35 mt-1">3D Card Visualizer</p>
+          </div>
 
-              {/* Google */}
-              <button
-                onClick={handleGoogle}
-                disabled={loading !== null}
-                className="w-full flex items-center justify-center gap-2.5 border border-black/10 bg-white hover:bg-black/[0.025] rounded-xl py-2.5 text-[13px] font-medium text-black/65 transition-all disabled:opacity-50 mb-3 active:scale-[0.99]"
-              >
-                {loading === 'google'
-                  ? <span className="animate-spin text-[10px] text-black/30">◌</span>
-                  : <GoogleIcon />
-                }
-                Continue with Google
-              </button>
-
-              {/* Divider */}
-              <div className="flex items-center gap-3 mb-3">
-                <div className="flex-1 h-px bg-black/[0.07]" />
-                <span className="text-[11px] text-black/20">or</span>
-                <div className="flex-1 h-px bg-black/[0.07]" />
-              </div>
-
-              {/* Magic link */}
-              <form onSubmit={handleMagicLink} className="space-y-2.5">
-                <input
-                  type="email"
-                  placeholder="your@email.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="w-full text-[13px] px-3.5 py-2.5 rounded-xl border border-black/10 bg-black/[0.02] focus:outline-none focus:border-black/25 focus:bg-white transition-all placeholder:text-black/25"
-                  required
-                />
+          {/* Form card */}
+          <div className="bg-white rounded-2xl border border-black/[0.07] shadow-xl shadow-black/[0.05] p-6">
+            {sent ? (
+              /* ── Confirmation ── */
+              <div className="text-center py-3">
+                <div className="w-12 h-12 rounded-2xl bg-black/[0.04] flex items-center justify-center mx-auto mb-4">
+                  <svg className="w-5 h-5 text-black/40" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
+                  </svg>
+                </div>
+                <h2 className="text-[15px] font-semibold text-black/85 mb-1.5">Check your inbox</h2>
+                <p className="text-[13px] text-black/45 leading-relaxed">
+                  We sent a magic link to<br />
+                  <span className="font-medium text-black/70">{email}</span>
+                </p>
                 <button
-                  type="submit"
-                  disabled={loading !== null || !email}
-                  className="w-full bg-[#1a1a1a] hover:bg-[#2d2d2d] text-white text-[13px] font-medium py-2.5 rounded-xl transition-all disabled:opacity-40 active:scale-[0.99]"
+                  onClick={() => { setSent(false); setEmail('') }}
+                  className="mt-4 text-[11px] text-black/30 hover:text-black/55 transition-colors underline"
                 >
-                  {loading === 'magic' ? 'Sending…' : 'Send magic link'}
+                  Use a different email
                 </button>
-              </form>
+              </div>
+            ) : (
+              <>
+                <h2 className="text-[15px] font-semibold text-black/85 mb-0.5 text-center">Sign in</h2>
+                <p className="text-[12px] text-black/35 text-center mb-5">No password needed</p>
 
-              {error && (
-                <p className="text-[11px] text-red-500/80 mt-3 text-center leading-relaxed">{error}</p>
-              )}
-            </>
+                {/* Google */}
+                <button
+                  onClick={handleGoogle}
+                  disabled={loading !== null}
+                  className="w-full flex items-center justify-center gap-2.5 border border-black/10 bg-white hover:bg-black/[0.025] rounded-xl py-2.5 text-[13px] font-medium text-black/65 transition-all disabled:opacity-50 mb-3 active:scale-[0.99]"
+                >
+                  {loading === 'google'
+                    ? <span className="animate-spin text-[10px] text-black/30">◌</span>
+                    : <GoogleIcon />
+                  }
+                  Continue with Google
+                </button>
+
+                {/* Divider */}
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="flex-1 h-px bg-black/[0.07]" />
+                  <span className="text-[11px] text-black/20">or</span>
+                  <div className="flex-1 h-px bg-black/[0.07]" />
+                </div>
+
+                {/* Magic link */}
+                <form onSubmit={handleMagicLink} className="space-y-2.5">
+                  <input
+                    type="email"
+                    placeholder="your@email.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="w-full text-[13px] px-3.5 py-2.5 rounded-xl border border-black/10 bg-black/[0.02] focus:outline-none focus:border-black/25 focus:bg-white transition-all placeholder:text-black/25"
+                    required
+                  />
+                  <button
+                    type="submit"
+                    disabled={loading !== null || !email}
+                    className="w-full bg-[#1a1a1a] hover:bg-[#2d2d2d] text-white text-[13px] font-medium py-2.5 rounded-xl transition-all disabled:opacity-40 active:scale-[0.99]"
+                  >
+                    {loading === 'magic' ? 'Sending…' : 'Send magic link'}
+                  </button>
+                </form>
+
+                {error && (
+                  <p className="text-[11px] text-red-500/80 mt-3 text-center leading-relaxed">{error}</p>
+                )}
+              </>
+            )}
+          </div>
+
+          {onDevSkip && (
+            <button
+              onClick={onDevSkip}
+              className="block mx-auto mt-4 text-[10px] text-black/20 hover:text-black/40 transition-colors underline"
+            >
+              [DEV] Skip auth
+            </button>
           )}
         </div>
-
-        <p className="text-center text-[10px] text-black/20 mt-4">
-          CardistryStudio · 3D Card Visualizer
-        </p>
-
-        {onDevSkip && (
-          <button
-            onClick={onDevSkip}
-            className="block mx-auto mt-3 text-[10px] text-black/20 hover:text-black/40 transition-colors underline"
-          >
-            [DEV] Skip auth
-          </button>
-        )}
       </div>
+
+      {/* ── Right — placeholder image ──────────────────────────────── */}
+      <div className="w-1/2 relative bg-[#e8e8ed] overflow-hidden">
+        {/* Placeholder content */}
+        <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 select-none">
+          <div className="w-16 h-16 rounded-2xl bg-black/[0.06] flex items-center justify-center">
+            <svg className="w-7 h-7 text-black/20" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.4}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909M3.75 18h16.5M6.75 6.75h.008v.008H6.75V6.75z" />
+            </svg>
+          </div>
+          <p className="text-[12px] text-black/25 font-medium">Image coming soon</p>
+        </div>
+      </div>
+
     </div>
   )
 }

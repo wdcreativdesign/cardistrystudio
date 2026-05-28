@@ -8,6 +8,7 @@ import { Header } from './components/Header'
 import { LeftPanel } from './components/LeftPanel'
 import { type CardSettings, type CardPage, type Orientation } from './types'
 import { contrastColor } from './lib/utils'
+import { randomizePoses } from './lib/randomize'
 
 /* ── Default card settings ───────────────────────────────────────── */
 const DEFAULT_SETTINGS: CardSettings = {
@@ -178,6 +179,21 @@ export default function App() {
       ),
     )
   }, [activePageId])
+
+  /* ── Randomize — generates collision-free poses for all displayed cards ── */
+  const handleRandomize = useCallback(() => {
+    const count = displayCountRef.current as 1 | 2 | 3
+    const patches = randomizePoses(count)
+    setPages((prev) => {
+      const next = [...prev]
+      patches.forEach((patch, i) => {
+        if (!next[i]) return
+        // Patch only pose fields — orientation, finish, colors, images untouched
+        next[i] = { ...next[i], settings: { ...next[i].settings, ...patch } }
+      })
+      return next
+    })
+  }, [])
 
   /* ── Full restart — wipes all pages ── */
   const handleRestart = useCallback(() => {
@@ -468,7 +484,7 @@ export default function App() {
       </div>
 
       {/* ── Right control panel ── */}
-      <ControlPanel settings={settings} onChange={handleChange} onReset={handleReset} onExport={handleExport} />
+      <ControlPanel settings={settings} displayCount={displayCount} onChange={handleChange} onReset={handleReset} onRandomize={handleRandomize} onExport={handleExport} />
 
       {/* ── Orientation warning dialog ── */}
       {pendingOrientation && (

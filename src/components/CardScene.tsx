@@ -183,7 +183,11 @@ export function CardScene({ displayedPages, displayCount, tilt, glRef, sceneRef,
     >
       {/* Named group — hidden during transparent export */}
       <group name="bg-layers">
-        {bgColor !== 'transparent' && <SceneBackground color={bgColor} />}
+        {bgColor !== 'transparent'
+          && !bgColor.startsWith('linear-gradient')
+          && !bgColor.startsWith('radial-gradient')
+          && <SceneBackground color={bgColor} />
+        }
         <ContactShadows
           position={[0, -1.75, 0]}
           opacity={0.16}

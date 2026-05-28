@@ -18,9 +18,18 @@ function luminance(hex: string): number {
  * Returns '#1a1a1a' or '#ffffff' depending on which gives
  * a contrast ratio ≥ 4.5:1 against the given background color.
  * Falls back to dark for transparent backgrounds.
+ * For gradient strings, averages the luminance of all hex colors found.
  */
 export function contrastColor(bgColor: string): '#1a1a1a' | '#ffffff' {
-  if (!bgColor || bgColor === 'transparent' || !bgColor.startsWith('#')) return '#1a1a1a'
+  if (!bgColor || bgColor === 'transparent') return '#1a1a1a'
+  // Gradient: extract all hex colors and average their luminance
+  if (bgColor.startsWith('linear-gradient') || bgColor.startsWith('radial-gradient')) {
+    const hexes = bgColor.match(/#[0-9a-fA-F]{6}/g)
+    if (!hexes || hexes.length === 0) return '#1a1a1a'
+    const avgL = hexes.reduce((sum, h) => sum + luminance(h), 0) / hexes.length
+    return 1.05 / (avgL + 0.05) >= (avgL + 0.05) / 0.05 ? '#ffffff' : '#1a1a1a'
+  }
+  if (!bgColor.startsWith('#')) return '#1a1a1a'
   const L = luminance(bgColor)
   const contrastWhite = 1.05 / (L + 0.05)
   const contrastBlack = (L + 0.05) / 0.05
