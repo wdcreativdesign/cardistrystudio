@@ -27,8 +27,13 @@ export function LoginPage({ onDevSkip }: { onDevSkip?: () => void }) {
       email,
       options: { emailRedirectTo: window.location.origin },
     })
-    if (error) setError(error.message)
-    else       setSent(true)
+    if (error) {
+      // Rate limit = link already sent, show success anyway
+      if (error.message.toLowerCase().includes('rate')) setSent(true)
+      else setError(error.message)
+    } else {
+      setSent(true)
+    }
     setLoading(null)
   }
 
