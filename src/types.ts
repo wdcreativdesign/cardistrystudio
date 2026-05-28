@@ -25,6 +25,14 @@ export interface CardPage {
   settings: CardSettings
 }
 
+export interface Workspace {
+  id:           string
+  name:         string
+  displayCount: 1 | 2 | 3
+  pages:        CardPage[]
+  activePageId: string
+}
+
 export interface FinishConfig {
   label: string
   metalness: number

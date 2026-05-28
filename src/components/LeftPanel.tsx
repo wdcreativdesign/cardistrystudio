@@ -1,72 +1,119 @@
 import { Plus, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { type CardPage } from '@/types'
+import { type Workspace } from '@/types'
 
-/* ─── Individual page thumbnail ─────────────────────────────────── */
-function PageThumb({
-  page,
+/* ── Card silhouette sizes ───────────────────────────────────────── */
+// aspect ratio: 85.6 × 54 mm → 1.585 wide:tall (horizontal)
+const CARD_RATIO = 85.6 / 54
+
+function cardDims(orientation: 'horizontal' | 'vertical', maxH: number) {
+  if (orientation === 'horizontal') {
+    const h = maxH
+    return { w: Math.round(h * CARD_RATIO), h }
+  } else {
+    const w = Math.round(maxH / CARD_RATIO)
+    return { w, h: maxH }
+  }
+}
+
+/* ── Workspace thumbnail ─────────────────────────────────────────── */
+function WorkspaceThumb({
+  workspace,
   index,
   active,
-  inScene,
   canDelete,
   onSelect,
   onDelete,
 }: {
-  page: CardPage
-  index: number
-  active: boolean
-  inScene: boolean
+  workspace: Workspace
+  index:     number
+  active:    boolean
   canDelete: boolean
-  onSelect: () => void
-  onDelete: () => void
+  onSelect:  () => void
+  onDelete:  () => void
 }) {
-  const isV = page.settings.orientation === 'vertical'
-  const W = 48
-  const H = isV
-    ? Math.round(W * 85.7 / 54)
-    : Math.round(W * 54 / 85.7)
+  const THUMB_W = 64
+  const THUMB_H = 44
+  const GAP     = 3
+
+  const count       = workspace.displayCount
+  const firstCard   = workspace.pages[0]
+  const orientation = firstCard?.settings.orientation ?? 'horizontal'
+
+  // Compute card dims so all N cards + gaps fit within THUMB_W
+  const totalGap = (count - 1) * GAP
+  const maxCardW = Math.floor((THUMB_W - totalGap - 8) / count) // 4px padding each side
+  const maxCardH = THUMB_H - 8
+  const isH      = orientation === 'horizontal'
+
+  let cw: number, ch: number
+  if (isH) {
+    cw = maxCardW
+    ch = Math.round(cw / CARD_RATIO)
+    if (ch > maxCardH) { ch = maxCardH; cw = Math.round(ch * CARD_RATIO) }
+  } else {
+    ch = maxCardH
+    cw = Math.round(ch / CARD_RATIO)
+    if (cw > maxCardW) { cw = maxCardW; ch = Math.round(cw * CARD_RATIO) }
+  }
+
+  const totalW = cw * count + GAP * (count - 1)
 
   return (
-    <div className="relative group flex-shrink-0" style={{ width: W, height: H }}>
-      <button onClick={onSelect} title={page.name} className="block w-full h-full">
+    <div className="relative group flex-shrink-0" style={{ width: THUMB_W, height: THUMB_H }}>
+      <button
+        onClick={onSelect}
+        title={workspace.name}
+        className="block w-full h-full"
+      >
         <div
           className={cn(
-            'relative w-full h-full rounded-[5px] overflow-hidden transition-all duration-100',
+            'relative w-full h-full rounded-[7px] overflow-hidden transition-all duration-100',
+            'flex items-center justify-center',
             active
               ? 'ring-2 ring-black/75 ring-offset-2'
-              : inScene
-                ? 'ring-1 ring-black/30 hover:ring-black/50'
-                : 'ring-1 ring-black/10 hover:ring-black/25 opacity-45',
+              : 'ring-1 ring-black/12 hover:ring-black/30',
           )}
-          style={{ backgroundColor: '#111' }}
+          style={{ backgroundColor: '#e8e8ed' }}
         >
-          {/* Edge-color accent strip */}
-          {!page.settings.frontImage && (
-            <div
-              className="absolute left-0 top-0 bottom-0 w-[3px]"
-              style={{ backgroundColor: page.settings.edgeColor }}
-            />
-          )}
-          {/* Front image preview */}
-          {page.settings.frontImage && (
-            <img
-              src={page.settings.frontImage}
-              alt=""
-              className="absolute inset-0 w-full h-full object-cover"
-            />
-          )}
+          {/* Card silhouettes */}
+          <div
+            className="flex items-center"
+            style={{ gap: GAP, width: totalW }}
+          >
+            {Array.from({ length: count }).map((_, i) => {
+              const page = workspace.pages[i]
+              const edgeColor = page?.settings.edgeColor ?? '#009FFF'
+              const hasImg    = !!page?.settings.frontImage
+              return (
+                <div
+                  key={i}
+                  className="relative rounded-[2px] overflow-hidden flex-shrink-0"
+                  style={{ width: cw, height: ch, backgroundColor: '#1c1c1e' }}
+                >
+                  {hasImg ? (
+                    <img
+                      src={page.settings.frontImage!}
+                      alt=""
+                      className="absolute inset-0 w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div
+                      className="absolute left-0 top-0 bottom-0"
+                      style={{ width: 2, backgroundColor: edgeColor }}
+                    />
+                  )}
+                </div>
+              )
+            })}
+          </div>
         </div>
       </button>
 
-      {/* Page-number badge */}
+      {/* Index badge */}
       <div className="absolute bottom-0 right-0 text-[7px] font-bold leading-none text-white/80 bg-black/50 px-[3px] py-px rounded-[3px] pointer-events-none">
         {index + 1}
       </div>
-
-      {/* "In scene" dot indicator */}
-      {inScene && !active && (
-        <div className="absolute -top-1 -left-1 w-2 h-2 rounded-full bg-black/40 border border-white pointer-events-none" />
-      )}
 
       {/* Delete button */}
       {canDelete && (
@@ -79,7 +126,7 @@ function PageThumb({
             'text-black/35 hover:text-red-500 hover:border-red-200 hover:bg-red-50',
             'opacity-0 group-hover:opacity-100 transition-opacity duration-100',
           )}
-          title="Remove card"
+          title="Remove workspace"
         >
           <X className="w-2 h-2" />
         </button>
@@ -88,26 +135,22 @@ function PageThumb({
   )
 }
 
-/* ─── LeftPanel ──────────────────────────────────────────────────── */
+/* ── LeftPanel ───────────────────────────────────────────────────── */
 interface LeftPanelProps {
-  pages:        CardPage[]
-  activePageId: string
-  displayCount: number
-  onSelect:     (id: string) => void
-  onAdd:        () => void
-  onDelete:     (id: string) => void
+  workspaces:        Workspace[]
+  activeWorkspaceId: string
+  onSelect:          (id: string) => void
+  onAdd:             () => void
+  onDelete:          (id: string) => void
 }
 
 export function LeftPanel({
-  pages,
-  activePageId,
-  displayCount,
+  workspaces,
+  activeWorkspaceId,
   onSelect,
   onAdd,
   onDelete,
 }: LeftPanelProps) {
-  const canAdd = pages.length < 3 || displayCount < 3
-
   return (
     <div
       className={cn(
@@ -119,21 +162,20 @@ export function LeftPanel({
         'p-2',
       )}
     >
-      {/* Scrollable pages list */}
+      {/* Workspace list */}
       <div
         className="flex flex-col items-center gap-2 overflow-y-auto"
         style={{ maxHeight: 'calc(100vh - 140px)', scrollbarWidth: 'none' }}
       >
-        {pages.map((page, i) => (
-          <PageThumb
-            key={page.id}
-            page={page}
+        {workspaces.map((ws, i) => (
+          <WorkspaceThumb
+            key={ws.id}
+            workspace={ws}
             index={i}
-            active={page.id === activePageId}
-            inScene={i < displayCount}
-            canDelete={pages.length > 1}
-            onSelect={() => onSelect(page.id)}
-            onDelete={() => onDelete(page.id)}
+            active={ws.id === activeWorkspaceId}
+            canDelete={workspaces.length > 1}
+            onSelect={() => onSelect(ws.id)}
+            onDelete={() => onDelete(ws.id)}
           />
         ))}
       </div>
@@ -141,17 +183,16 @@ export function LeftPanel({
       {/* Divider */}
       <div className="w-full h-px bg-black/[0.07]" />
 
-      {/* Add page button — disabled when already at max (3 cards, all displayed) */}
+      {/* Add workspace button */}
       <button
-        onClick={canAdd ? onAdd : undefined}
-        title={canAdd ? 'Add card' : 'Maximum 3 cards'}
+        onClick={onAdd}
+        title="New workspace"
         className={cn(
           'w-8 h-8 rounded-[10px] flex-shrink-0',
           'flex items-center justify-center',
-          'transition-all active:scale-95',
-          canAdd
-            ? 'bg-black/[0.04] hover:bg-black/[0.09] text-black/30 hover:text-black/60 cursor-pointer'
-            : 'bg-black/[0.02] text-black/15 cursor-not-allowed',
+          'bg-black/[0.04] hover:bg-black/[0.09]',
+          'text-black/30 hover:text-black/60',
+          'transition-all active:scale-95 cursor-pointer',
         )}
       >
         <Plus className="w-3.5 h-3.5" />
