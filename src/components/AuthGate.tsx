@@ -22,19 +22,23 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
     let mounted = true
 
     async function init() {
-      const { data: { session } } = await supabase.auth.getSession()
-      if (!mounted) return
-
-      const u = session?.user ?? null
-      setUser(u)
-
-      if (u) {
-        const complete = await fetchProfileComplete(u.id)
+      try {
+        const { data: { session } } = await supabase.auth.getSession()
         if (!mounted) return
-        setProfileComplete(complete)
-      }
 
-      setLoading(false)
+        const u = session?.user ?? null
+        setUser(u)
+
+        if (u) {
+          const complete = await fetchProfileComplete(u.id)
+          if (!mounted) return
+          setProfileComplete(complete)
+        }
+      } catch (err) {
+        console.error('[AuthGate] init error:', err)
+      } finally {
+        if (mounted) setLoading(false)
+      }
     }
 
     init()
