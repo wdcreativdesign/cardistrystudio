@@ -100,15 +100,27 @@ function loadImageAsTexture(
   img.src = src
 }
 
+/* ─── Glow config ────────────────────────────────────────────────── */
+const GLOW_LAYERS = [
+  { scale: 1.055, base: 0.72 },
+  { scale: 1.155, base: 0.34 },
+  { scale: 1.30,  base: 0.12 },
+] as const
+
 /* ─── Card3D ─────────────────────────────────────────────────────── */
 interface Card3DProps {
   settings: CardSettings
-  tilt: { x: number; y: number }
+  tilt:     { x: number; y: number }
+  isActive?: boolean
 }
 
-export function Card3D({ settings, tilt }: Card3DProps) {
+export function Card3D({ settings, tilt, isActive = false }: Card3DProps) {
   const groupRef = useRef<THREE.Group>(null)
   const scaleVec = useRef(new THREE.Vector3(1, 1, 1))
+
+  /* ── Glow material refs (3 front + 3 back) ── */
+  const glowRefs  = useRef<(THREE.MeshBasicMaterial | null)[]>([])
+  const glowClock = useRef(0)
 
   /* ── Orientation : geoOrientation pilote la géométrie ── */
   const [geoOrientation, setGeoOrientation] = useState<Orientation>(settings.orientation)
@@ -189,6 +201,17 @@ export function Card3D({ settings, tilt }: Card3DProps) {
 
     scaleVec.current.setScalar(settings.zoom)
     g.scale.lerp(scaleVec.current, 0.1)
+
+    /* ── Glow pulse ── */
+    if (isActive) {
+      glowClock.current += delta
+      const pulse = 0.78 + Math.sin(glowClock.current * 2.2) * 0.22
+      glowRefs.current.forEach((mat, i) => {
+        if (mat) mat.opacity = GLOW_LAYERS[i % GLOW_LAYERS.length].base * pulse
+      })
+    } else {
+      glowClock.current = 0
+    }
   })
 
   const cfg = FINISH_CONFIGS[settings.finish]
@@ -199,10 +222,36 @@ export function Card3D({ settings, tilt }: Card3DProps) {
     envMapIntensity: cfg.envMapIntensity,
   }
 
-  const Z_FACE = CARD_D / 2 + 0.0002   // léger décalage anti z-fighting
+  const Z_FACE  = CARD_D / 2 + 0.0002   // léger décalage anti z-fighting
+  const GLOW_ZF = Z_FACE - 0.003        // juste derrière la face avant
+  const GLOW_ZB = -(Z_FACE - 0.003)     // juste derrière la face arrière
 
   return (
     <group ref={groupRef}>
+
+      {/* ── Lueur sélection (derrière les faces, bords visibles) ──── */}
+      {isActive && GLOW_LAYERS.map((g, i) => (
+        <mesh key={`gf${i}`} geometry={faceGeo} position={[0, 0, GLOW_ZF]} scale={g.scale}>
+          <meshBasicMaterial
+            ref={(m) => { glowRefs.current[i] = m }}
+            color={settings.edgeColor}
+            transparent
+            opacity={g.base}
+            depthWrite={false}
+          />
+        </mesh>
+      ))}
+      {isActive && GLOW_LAYERS.map((g, i) => (
+        <mesh key={`gb${i}`} geometry={faceGeo} position={[0, 0, GLOW_ZB]} rotation={[0, Math.PI, 0]} scale={g.scale}>
+          <meshBasicMaterial
+            ref={(m) => { glowRefs.current[GLOW_LAYERS.length + i] = m }}
+            color={settings.edgeColor}
+            transparent
+            opacity={g.base}
+            depthWrite={false}
+          />
+        </mesh>
+      ))}
 
       {/* ── Corps (tranche) — ExtrudeGeometry centrée sur Z ──────── */}
       <mesh geometry={bodyGeo} castShadow>

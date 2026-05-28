@@ -7,6 +7,7 @@ function PageThumb({
   page,
   index,
   active,
+  inScene,
   canDelete,
   onSelect,
   onDelete,
@@ -14,6 +15,7 @@ function PageThumb({
   page: CardPage
   index: number
   active: boolean
+  inScene: boolean
   canDelete: boolean
   onSelect: () => void
   onDelete: () => void
@@ -32,7 +34,9 @@ function PageThumb({
             'relative w-full h-full rounded-[5px] overflow-hidden transition-all duration-100',
             active
               ? 'ring-2 ring-black/75 ring-offset-2'
-              : 'ring-1 ring-black/10 hover:ring-black/30',
+              : inScene
+                ? 'ring-1 ring-black/30 hover:ring-black/50'
+                : 'ring-1 ring-black/10 hover:ring-black/25 opacity-45',
           )}
           style={{ backgroundColor: '#111' }}
         >
@@ -59,6 +63,11 @@ function PageThumb({
         {index + 1}
       </div>
 
+      {/* "In scene" dot indicator */}
+      {inScene && !active && (
+        <div className="absolute -top-1 -left-1 w-2 h-2 rounded-full bg-black/40 border border-white pointer-events-none" />
+      )}
+
       {/* Delete button */}
       {canDelete && (
         <button
@@ -81,20 +90,24 @@ function PageThumb({
 
 /* ─── LeftPanel ──────────────────────────────────────────────────── */
 interface LeftPanelProps {
-  pages: CardPage[]
+  pages:        CardPage[]
   activePageId: string
-  onSelect: (id: string) => void
-  onAdd: () => void
-  onDelete: (id: string) => void
+  displayCount: number
+  onSelect:     (id: string) => void
+  onAdd:        () => void
+  onDelete:     (id: string) => void
 }
 
 export function LeftPanel({
   pages,
   activePageId,
+  displayCount,
   onSelect,
   onAdd,
   onDelete,
 }: LeftPanelProps) {
+  const canAdd = pages.length < 3 || displayCount < 3
+
   return (
     <div
       className={cn(
@@ -117,6 +130,7 @@ export function LeftPanel({
             page={page}
             index={i}
             active={page.id === activePageId}
+            inScene={i < displayCount}
             canDelete={pages.length > 1}
             onSelect={() => onSelect(page.id)}
             onDelete={() => onDelete(page.id)}
@@ -127,16 +141,17 @@ export function LeftPanel({
       {/* Divider */}
       <div className="w-full h-px bg-black/[0.07]" />
 
-      {/* Add page button */}
+      {/* Add page button — disabled when already at max (3 cards, all displayed) */}
       <button
-        onClick={onAdd}
-        title="Add card"
+        onClick={canAdd ? onAdd : undefined}
+        title={canAdd ? 'Add card' : 'Maximum 3 cards'}
         className={cn(
           'w-8 h-8 rounded-[10px] flex-shrink-0',
-          'bg-black/[0.04] hover:bg-black/[0.09]',
           'flex items-center justify-center',
-          'text-black/30 hover:text-black/60',
           'transition-all active:scale-95',
+          canAdd
+            ? 'bg-black/[0.04] hover:bg-black/[0.09] text-black/30 hover:text-black/60 cursor-pointer'
+            : 'bg-black/[0.02] text-black/15 cursor-not-allowed',
         )}
       >
         <Plus className="w-3.5 h-3.5" />

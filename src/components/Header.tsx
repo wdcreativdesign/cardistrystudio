@@ -1,21 +1,31 @@
-import { Download, RotateCcw, LogOut } from 'lucide-react'
+import { RotateCcw, LogOut } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
+import { FeedbackButton } from './FeedbackButton'
+import { cn } from '@/lib/utils'
 
 interface HeaderProps {
-  onExport:  () => void
-  onRestart: () => void
+  onRestart:  () => void
+  logoColor?: '#1a1a1a' | '#ffffff'
 }
 
-export function Header({ onExport, onRestart }: HeaderProps) {
+export function Header({ onRestart, logoColor = '#1a1a1a' }: HeaderProps) {
   async function handleSignOut() {
     await supabase.auth.signOut()
   }
+
+  const dark = logoColor !== '#ffffff'
+  const btnClass = dark
+    ? 'border-black/12 bg-white/70 hover:bg-white text-black/35 hover:text-black/60'
+    : 'border-white/20 bg-white/15 hover:bg-white/25 text-white/60 hover:text-white/90'
 
   return (
     <header className="absolute top-0 left-0 right-0 z-20 flex items-center justify-between px-6 py-4 pointer-events-none">
       {/* Logo */}
       <div className="flex items-center pointer-events-auto">
-        <span className="text-[17px] tracking-[-0.02em] text-[#1a1a1a]">
+        <span
+          className="text-[17px] tracking-[-0.02em] transition-colors duration-300"
+          style={{ color: logoColor }}
+        >
           <span className="font-semibold">Cardistry</span>
           <span className="font-normal">
             Studio<sup className="text-[10px] align-super">™</sup>
@@ -25,11 +35,17 @@ export function Header({ onExport, onRestart }: HeaderProps) {
 
       {/* Actions */}
       <div className="pointer-events-auto flex items-center gap-2">
+        {/* Feedback */}
+        <FeedbackButton logoColor={logoColor} />
+
         {/* Sign out */}
         <button
           onClick={handleSignOut}
           title="Sign out"
-          className="flex items-center justify-center w-9 h-9 border border-black/12 bg-white/70 hover:bg-white text-black/35 hover:text-black/60 rounded-xl shadow-sm backdrop-blur-sm transition-all active:scale-[0.97]"
+          className={cn(
+            'flex items-center justify-center w-9 h-9 rounded-xl border shadow-sm backdrop-blur-sm transition-all active:scale-[0.97]',
+            btnClass,
+          )}
         >
           <LogOut className="w-3.5 h-3.5" />
         </button>
@@ -37,19 +53,14 @@ export function Header({ onExport, onRestart }: HeaderProps) {
         {/* Restart */}
         <button
           onClick={onRestart}
-          className="flex items-center gap-2 border border-black/12 bg-white/70 hover:bg-white text-black/55 hover:text-black/80 text-[13px] font-medium px-4 py-2 h-9 rounded-xl shadow-sm backdrop-blur-sm transition-all active:scale-[0.97]"
+          className={cn(
+            'flex items-center gap-2 border text-[13px] font-medium px-4 py-2 h-9 rounded-xl shadow-sm backdrop-blur-sm transition-all active:scale-[0.97]',
+            btnClass,
+            dark ? 'text-black/55 hover:text-black/80' : '',
+          )}
         >
           <RotateCcw className="w-3.5 h-3.5" />
           Restart
-        </button>
-
-        {/* Export — opens dialog */}
-        <button
-          onClick={onExport}
-          className="flex items-center gap-2 bg-[#1a1a1a] hover:bg-[#2d2d2d] text-white text-[13px] font-medium px-4 py-2 h-9 rounded-xl shadow-sm transition-all active:scale-[0.97]"
-        >
-          <Download className="w-3.5 h-3.5" />
-          Export
         </button>
       </div>
     </header>

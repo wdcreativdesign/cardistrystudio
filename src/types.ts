@@ -6,6 +6,9 @@ export interface CardSettings {
   rotY: number           // degrés: -180 → 180
   rotZ: number           // degrés: -45 → 45
   zoom: number           // 0.6 → 2.2
+  posX: number           // décalage X en unités monde
+  posY: number           // décalage Y en unités monde
+  posZ: number           // décalage Z en unités monde
   finish: Finish
   orientation: Orientation
   edgeColor: string      // couleur de la tranche (hex)
@@ -13,6 +16,7 @@ export interface CardSettings {
   backImage: string | null   // data URL PNG
   autoRotate: boolean
   lightIntensity: number     // 0 → 2
+  bgColor: string | 'transparent'  // hex ou 'transparent'
 }
 
 export interface CardPage {
