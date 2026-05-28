@@ -2,74 +2,26 @@ import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import type { User } from '@supabase/supabase-js'
 import { LoginPage } from './LoginPage'
-import { OnboardingPage } from './OnboardingPage'
-
-async function fetchProfileComplete(userId: string): Promise<boolean> {
-  const { data, error } = await supabase
-    .from('profiles')
-    .select('first_name, role')
-    .eq('id', userId)
-    .maybeSingle()
-  return !error && !!data && !!data.first_name && !!data.role
-}
 
 export function AuthGate({ children }: { children: React.ReactNode }) {
-  const [user,            setUser]            = useState<User | null>(null)
-  const [loading,         setLoading]         = useState(true)
-  const [profileComplete, setProfileComplete] = useState(false)
+  const [user,    setUser]    = useState<User | null>(null)
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    let mounted = true
-
-    async function init() {
-      try {
-        const { data: { session } } = await supabase.auth.getSession()
-        if (!mounted) return
-
-        const u = session?.user ?? null
-        setUser(u)
-
-        if (u) {
-          const complete = await fetchProfileComplete(u.id)
-          if (!mounted) return
-          setProfileComplete(complete)
-        }
-      } catch (err) {
-        console.error('[AuthGate] init error:', err)
-      } finally {
-        if (mounted) setLoading(false)
-      }
-    }
-
-    init()
-
-    // Only react to real sign-in / sign-out events — skip INITIAL_SESSION
-    // (already handled by getSession above) and TOKEN_REFRESHED.
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (!mounted) return
-      if (event === 'SIGNED_OUT') {
-        setUser(null)
-        setProfileComplete(false)
-        return
-      }
-      if (event === 'SIGNED_IN') {
-        const u = session?.user ?? null
-        setUser(u)
-        if (u) {
-          const complete = await fetchProfileComplete(u.id)
-          if (!mounted) return
-          setProfileComplete(complete)
-        }
-      }
+    // Get initial session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null)
+      setLoading(false)
     })
 
-    return () => {
-      mounted = false
-      subscription.unsubscribe()
-    }
+    // Listen for auth state changes (sign in / sign out / token refresh)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null)
+    })
+
+    return () => subscription.unsubscribe()
   }, [])
 
-  /* ── Loading ── */
   if (loading) {
     return (
       <div className="flex h-screen w-screen items-center justify-center bg-[#f0f0f5]">
@@ -78,30 +30,8 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
     )
   }
 
-  /* ── Not authenticated ── */
-  if (!user) {
-    return (
-      <LoginPage
-        onDevSkip={import.meta.env.DEV ? () => {
-          setUser({ id: 'dev-user' } as User)
-          setProfileComplete(true)
-          setLoading(false)
-        } : undefined}
-      />
-    )
-  }
+  if (!user) return <LoginPage onDevSkip={import.meta.env.DEV ? () => setUser({} as User) : undefined} />
 
-  /* ── Authenticated but profile incomplete → onboarding ── */
-  if (!profileComplete) {
-    return (
-      <OnboardingPage
-        userId={user.id}
-        onComplete={() => setProfileComplete(true)}
-      />
-    )
-  }
-
-  /* ── Fully onboarded → app ── */
   return <>{children}</>
 }
 
