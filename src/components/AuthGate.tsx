@@ -4,54 +4,69 @@ import type { User } from '@supabase/supabase-js'
 import { LoginPage } from './LoginPage'
 import { OnboardingPage } from './OnboardingPage'
 
-type ProfileStatus = 'loading' | 'missing' | 'complete'
+async function fetchProfileComplete(userId: string): Promise<boolean> {
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('first_name, role')
+    .eq('id', userId)
+    .maybeSingle()
+  return !error && !!data && !!data.first_name && !!data.role
+}
 
 export function AuthGate({ children }: { children: React.ReactNode }) {
-  const [user,          setUser]          = useState<User | null>(null)
-  const [authLoading,   setAuthLoading]   = useState(true)
-  const [profileStatus, setProfileStatus] = useState<ProfileStatus>('loading')
-
-  /* ── Check whether this user has a complete profile ── */
-  async function checkProfile(u: User) {
-    setProfileStatus('loading')
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('first_name, role')
-      .eq('id', u.id)
-      .maybeSingle()
-
-    if (error || !data || !data.first_name || !data.role) {
-      setProfileStatus('missing')
-    } else {
-      setProfileStatus('complete')
-    }
-  }
+  const [user,            setUser]            = useState<User | null>(null)
+  const [loading,         setLoading]         = useState(true)
+  const [profileComplete, setProfileComplete] = useState(false)
 
   useEffect(() => {
-    // Get initial session
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      const u = session?.user ?? null
-      setUser(u)
-      if (u) await checkProfile(u)
-      setAuthLoading(false)
-    })
+    let mounted = true
 
-    // Listen for auth state changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+    async function init() {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!mounted) return
+
       const u = session?.user ?? null
       setUser(u)
+
       if (u) {
-        await checkProfile(u)
-      } else {
-        setProfileStatus('loading')
+        const complete = await fetchProfileComplete(u.id)
+        if (!mounted) return
+        setProfileComplete(complete)
+      }
+
+      setLoading(false)
+    }
+
+    init()
+
+    // Only react to real sign-in / sign-out events — skip INITIAL_SESSION
+    // (already handled by getSession above) and TOKEN_REFRESHED.
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (!mounted) return
+      if (event === 'SIGNED_OUT') {
+        setUser(null)
+        setProfileComplete(false)
+        return
+      }
+      if (event === 'SIGNED_IN') {
+        const u = session?.user ?? null
+        setUser(u)
+        if (u) {
+          const complete = await fetchProfileComplete(u.id)
+          if (!mounted) return
+          setProfileComplete(complete)
+        }
       }
     })
 
-    return () => subscription.unsubscribe()
+    return () => {
+      mounted = false
+      subscription.unsubscribe()
+    }
   }, [])
 
   /* ── Loading ── */
-  if (authLoading || (user && profileStatus === 'loading')) {
+  if (loading) {
     return (
       <div className="flex h-screen w-screen items-center justify-center bg-[#f0f0f5]">
         <div className="text-black/30 text-[13px]">Loading…</div>
@@ -63,17 +78,21 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
   if (!user) {
     return (
       <LoginPage
-        onDevSkip={import.meta.env.DEV ? () => setUser({} as User) : undefined}
+        onDevSkip={import.meta.env.DEV ? () => {
+          setUser({ id: 'dev-user' } as User)
+          setProfileComplete(true)
+          setLoading(false)
+        } : undefined}
       />
     )
   }
 
   /* ── Authenticated but profile incomplete → onboarding ── */
-  if (profileStatus === 'missing') {
+  if (!profileComplete) {
     return (
       <OnboardingPage
         userId={user.id}
-        onComplete={() => setProfileStatus('complete')}
+        onComplete={() => setProfileComplete(true)}
       />
     )
   }
