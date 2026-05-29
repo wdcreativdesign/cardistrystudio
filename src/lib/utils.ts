@@ -1,5 +1,5 @@
-import { type ClassValue, clsx } from 'clsx'
-import { twMerge } from 'tailwind-merge'
+import { clsx, type ClassValue } from "clsx"
+import { twMerge } from "tailwind-merge"
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
@@ -14,15 +14,8 @@ function luminance(hex: string): number {
   return 0.2126 * toLinear(r) + 0.7152 * toLinear(g) + 0.0722 * toLinear(b)
 }
 
-/**
- * Returns '#1a1a1a' or '#ffffff' depending on which gives
- * a contrast ratio ≥ 4.5:1 against the given background color.
- * Falls back to dark for transparent backgrounds.
- * For gradient strings, averages the luminance of all hex colors found.
- */
 export function contrastColor(bgColor: string): '#1a1a1a' | '#ffffff' {
   if (!bgColor || bgColor === 'transparent') return '#1a1a1a'
-  // Gradient: extract all hex colors and average their luminance
   if (bgColor.startsWith('linear-gradient') || bgColor.startsWith('radial-gradient')) {
     const hexes = bgColor.match(/#[0-9a-fA-F]{6}/g)
     if (!hexes || hexes.length === 0) return '#1a1a1a'
