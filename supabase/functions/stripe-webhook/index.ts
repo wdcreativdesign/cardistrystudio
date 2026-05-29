@@ -29,15 +29,9 @@ serve(async (req) => {
   try {
     event = await stripe.webhooks.constructEventAsync(body, signature!, webhookSecret)
   } catch (err) {
-    // In test mode, fall back to parsing without signature verification
-    const rawEvent = JSON.parse(body) as Stripe.Event
-    if (rawEvent?.livemode === true) {
-      const msg = err instanceof Error ? err.message : String(err)
-      console.error('Webhook signature error (live):', msg)
-      return new Response(`Webhook error: ${msg}`, { status: 400 })
-    }
-    console.warn('Signature check failed in test mode — processing anyway')
-    event = rawEvent
+    const msg = err instanceof Error ? err.message : String(err)
+    console.error('Webhook signature error:', msg)
+    return new Response(`Webhook error: ${msg}`, { status: 400 })
   }
 
   if (event.type === 'checkout.session.completed') {
