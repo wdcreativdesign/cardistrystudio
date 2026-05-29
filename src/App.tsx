@@ -1,14 +1,18 @@
 import { useState, useRef, useCallback, useEffect, useMemo } from 'react'
 import * as THREE from 'three'
-import { AlertTriangle } from 'lucide-react'
+import { AlertTriangle, CheckCircle } from 'lucide-react'
+import { type User } from '@supabase/supabase-js'
 import { CardScene } from './components/CardScene'
 import { ControlPanel } from './components/ControlPanel'
 import { BottomBar } from './components/BottomBar'
 import { Header } from './components/Header'
 import { LeftPanel } from './components/LeftPanel'
+import { BuyCreditsModal } from './components/BuyCreditsModal'
 import { type CardSettings, type CardPage, type Workspace, type Orientation, type SavedPose } from './types'
 import { contrastColor } from './lib/utils'
 import { randomizePoses } from './lib/randomize'
+import { supabase } from './lib/supabase'
+import { useCredits, EXPORT_COST } from './hooks/useCredits'
 
 /* ── Default card settings ───────────────────────────────────────── */
 const DEFAULT_SETTINGS: CardSettings = {
@@ -46,12 +50,37 @@ function makeId() { return Math.random().toString(36).slice(2, 9) }
 
 /* ── App ─────────────────────────────────────────────────────────── */
 export default function App() {
-  const [workspaces,       setWorkspaces]       = useState<Workspace[]>([makeInitWorkspace()])
-  const [activeWorkspaceId, setActiveWorkspaceId] = useState<string>(INIT_WS_ID)
-  const [tilt,             setTilt]             = useState({ x: 0, y: 0 })
-  const [altHeld,          setAltHeld]          = useState(false)
+  const [workspaces,         setWorkspaces]         = useState<Workspace[]>([makeInitWorkspace()])
+  const [activeWorkspaceId,  setActiveWorkspaceId]  = useState<string>(INIT_WS_ID)
+  const [tilt,               setTilt]               = useState({ x: 0, y: 0 })
+  const [altHeld,            setAltHeld]            = useState(false)
   const [pendingOrientation, setPendingOrientation] = useState<Orientation | null>(null)
   const [showReloadConfirm,  setShowReloadConfirm]  = useState(false)
+  const [showBuyCredits,     setShowBuyCredits]     = useState(false)
+  const [creditSuccess,      setCreditSuccess]      = useState(false)
+
+  /* ── Current user ── */
+  const [currentUser, setCurrentUser] = useState<User | null>(null)
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data: { user } }) => setCurrentUser(user))
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => {
+      setCurrentUser(session?.user ?? null)
+    })
+    return () => subscription.unsubscribe()
+  }, [])
+
+  /* ── Credits ── */
+  const { balance: credits } = useCredits(currentUser?.id)
+
+  /* ── Handle ?credits=ok return from Stripe ── */
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    if (params.get('credits') === 'ok') {
+      setCreditSuccess(true)
+      window.history.replaceState({}, '', window.location.pathname)
+      setTimeout(() => setCreditSuccess(false), 4000)
+    }
+  }, [])
 
   /* ── Derived from active workspace ── */
   const activeWorkspace = workspaces.find((w) => w.id === activeWorkspaceId) ?? workspaces[0]
@@ -279,16 +308,16 @@ export default function App() {
     setActiveWorkspaceId(id)
   }, [])
 
-  /* ── Export ── */
-  const handleExport = useCallback((opts: { format: 'png' | 'jpg' | 'svg'; scale: number }) => {
+  /* ── Export (raw WebGL, appelé après vérification crédits) ── */
+  const doExport = useCallback((opts: { format: 'png' | 'jpg'; scale: number }) => {
     const gl     = glRef.current
     const scene  = sceneRef.current
     const camera = cameraRef.current
     if (!gl || !scene || !camera) return
 
     const isTransparent = settingsRef.current.bgColor === 'transparent'
-    const cssW   = gl.domElement.clientWidth
-    const cssH   = gl.domElement.clientHeight
+    const cssW    = gl.domElement.clientWidth
+    const cssH    = gl.domElement.clientHeight
     const origDpr = gl.getPixelRatio()
 
     gl.setPixelRatio(opts.scale)
@@ -308,26 +337,6 @@ export default function App() {
       dataURL = gl.domElement.toDataURL('image/png', 1.0)
       gl.setClearColor(savedColor, savedAlpha)
       if (bgLayers) bgLayers.visible = true
-    } else if (opts.format === 'svg') {
-      gl.render(scene, camera)
-      const pngDataUrl = gl.domElement.toDataURL('image/png', 1.0)
-      const w = gl.domElement.width
-      const h = gl.domElement.height
-      gl.setPixelRatio(origDpr)
-      gl.setSize(cssW, cssH, false)
-      gl.render(scene, camera)
-      const svgContent = [
-        `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}">`,
-        `  <image href="${pngDataUrl}" width="${w}" height="${h}"/>`,
-        `</svg>`,
-      ].join('\n')
-      const blob = new Blob([svgContent], { type: 'image/svg+xml' })
-      const url  = URL.createObjectURL(blob)
-      const link = document.createElement('a')
-      link.download = 'cardistrystudio-export.svg'
-      link.href = url; link.click()
-      URL.revokeObjectURL(url)
-      return
     } else {
       gl.render(scene, camera)
       const mimeType = opts.format === 'jpg' ? 'image/jpeg' : 'image/png'
@@ -344,6 +353,30 @@ export default function App() {
     link.download = `cardistrystudio-export@${opts.scale}x.${ext}`
     link.href = dataURL; link.click()
   }, [])
+
+  /* ── Export avec vérification crédits ── */
+  const handleExport = useCallback(async (opts: { format: 'png' | 'jpg'; scale: number }) => {
+    // No authenticated user (dev skip) — export directly without credit check
+    if (!currentUser) { doExport(opts); return }
+
+    if ((credits ?? 0) < EXPORT_COST) {
+      setShowBuyCredits(true)
+      return
+    }
+
+    const { data: ok } = await supabase.rpc('spend_credits', {
+      p_user_id: currentUser.id,
+      p_amount:  EXPORT_COST,
+      p_reason:  'export',
+    })
+
+    if (!ok) {
+      setShowBuyCredits(true)
+      return
+    }
+
+    doExport(opts)
+  }, [currentUser, credits, doExport])
 
   /* ── Drag / rotate / translate ── */
   const onPointerDown = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
@@ -462,6 +495,8 @@ export default function App() {
           onRestart={handleRestart}
           onLogoClick={handleLogoClick}
           logoColor={contrastColor(settings.bgColor)}
+          credits={credits}
+          onBuyCredits={() => setShowBuyCredits(true)}
         />
 
         <div
@@ -554,6 +589,24 @@ export default function App() {
               <button onClick={cancelOrientationChange} className="px-4 py-2 rounded-xl text-[13px] font-medium text-black/55 hover:text-black/80 border border-black/10 hover:bg-black/[0.04] transition-all">Cancel</button>
               <button onClick={confirmOrientationChange} className="px-4 py-2 rounded-xl text-[13px] font-medium bg-[#1a1a1a] hover:bg-[#2d2d2d] text-white transition-all active:scale-[0.97]">Continue</button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Buy credits modal ── */}
+      {showBuyCredits && (
+        <BuyCreditsModal
+          currentBalance={credits ?? 0}
+          onClose={() => setShowBuyCredits(false)}
+        />
+      )}
+
+      {/* ── Credits purchase success toast ── */}
+      {creditSuccess && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 animate-in fade-in slide-in-from-bottom-2 duration-300">
+          <div className="flex items-center gap-2.5 bg-[#1a1a1a] text-white px-4 py-3 rounded-xl shadow-xl text-[13px] font-medium">
+            <CheckCircle className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+            Crédits ajoutés avec succès !
           </div>
         </div>
       )}

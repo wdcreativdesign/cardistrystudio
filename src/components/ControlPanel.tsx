@@ -1,6 +1,6 @@
 import { useRef, useCallback, useState, useEffect } from 'react'
 import {
-  ImageUp, RotateCcw, Play, Pause, Sun, RefreshCcw, CreditCard, Pipette, Eye, Layers, Download, Move, ChevronDown, Shuffle,
+  ImageUp, RotateCcw, Play, Pause, Sun, RefreshCcw, CreditCard, Pipette, Eye, Layers, Download, Move, ChevronDown, Shuffle, Zap,
 } from 'lucide-react'
 import { Slider } from '@/components/ui/slider'
 import { Label } from '@/components/ui/label'
@@ -204,10 +204,7 @@ function DropZone({ label, image, onLoad }: {
       ) : (
         <div className="absolute inset-0 flex flex-col items-center justify-center gap-2">
           <ImageUp className="w-5 h-5 text-black/25" />
-          <div className="text-center">
-            <p className="text-[11px] text-black/45 font-medium">{label}</p>
-            <p className="text-[10px] text-black/25 mt-0.5">PNG · JPG · SVG</p>
-          </div>
+          <p className="text-[11px] text-black/45 font-medium">PNG · JPG · SVG</p>
         </div>
       )}
       <input
@@ -320,10 +317,10 @@ function BgSection({ value, onChange }: { value: string; onChange: (v: string) =
                 key={p.value}
                 onClick={() => { onChange(p.value); if (p.value !== 'transparent') setSolidHex(p.value) }}
                 className={cn(
-                  'w-9 h-9 rounded-xl border-2 transition-all flex-shrink-0',
+                  'w-9 h-9 rounded-xl transition-all flex-shrink-0',
                   value === p.value
-                    ? 'border-black/60 scale-110 shadow-md'
-                    : 'border-black/10 hover:border-black/30 hover:scale-105',
+                    ? 'ring-2 ring-inset ring-black/50 shadow-sm'
+                    : 'ring-1 ring-inset ring-black/10 hover:ring-black/25',
                 )}
                 style={p.style}
               />
@@ -460,7 +457,7 @@ function PillToggle<T extends string>({
 }
 
 /* ─── Export tab ────────────────────────────────────────────────── */
-type ExportFormat = 'png' | 'jpg' | 'svg'
+type ExportFormat = 'png' | 'jpg'
 
 function ExportTab({
   settings, onChange, onExport,
@@ -473,16 +470,13 @@ function ExportTab({
   const [scale,  setScale]  = useState(2)
 
   const isTransparent  = settings.bgColor === 'transparent'
-  const transpDisabled = isTransparent || format === 'jpg' || format === 'svg'
+  const transpDisabled = isTransparent || format === 'jpg'
 
   function handleFormat(f: ExportFormat) {
     setFormat(f)
   }
 
-  const exportLabel =
-    format === 'svg' ? 'Export SVG' :
-    format === 'jpg' ? 'Export JPG' :
-                       `Export PNG`
+  const exportLabel = format === 'jpg' ? 'Export JPG' : 'Export PNG'
 
   return (
     <div className="flex flex-col h-full">
@@ -497,25 +491,24 @@ function ExportTab({
       <Section title="Format" icon={<Download className="w-3.5 h-3.5" />}>
         <div className="space-y-4">
           <div>
-            <p className="text-[10px] font-medium text-black/35 uppercase tracking-wider mb-2">File type</p>
+            <p className="text-[12px] text-black/60 font-medium mb-2">File type</p>
             <PillToggle
               value={format}
               options={[
                 { value: 'png', label: 'PNG' },
                 { value: 'jpg', label: 'JPG' },
-                { value: 'svg', label: 'SVG' },
               ]}
               onChange={handleFormat}
             />
-            {(format === 'jpg' || format === 'svg') && (
+            {format === 'jpg' && (
               <p className="text-[10px] text-black/30 mt-1.5">
-                {format === 'svg' ? 'SVG' : 'JPG'} does not support transparency.
+                JPG does not support transparency.
               </p>
             )}
           </div>
 
           <div>
-            <p className="text-[10px] font-medium text-black/35 uppercase tracking-wider mb-2">Resolution</p>
+            <p className="text-[12px] text-black/60 font-medium mb-2">Resolution</p>
             <PillToggle
               value={String(scale) as '1' | '2' | '3' | '4'}
               options={[
@@ -543,6 +536,9 @@ function ExportTab({
         >
           <Download className="w-3.5 h-3.5" />
           {exportLabel}
+          <span className="ml-auto text-[11px] text-white/40 font-normal flex items-center gap-0.5">
+            <Zap className="w-2.5 h-2.5" />5
+          </span>
         </button>
       </div>
     </div>
@@ -556,7 +552,7 @@ interface ControlPanelProps {
   onChange:      (patch: Partial<CardSettings>) => void
   onReset:       () => void
   onRandomize:   () => void
-  onExport:      (opts: { format: 'png' | 'jpg' | 'svg'; scale: number }) => void
+  onExport:      (opts: { format: 'png' | 'jpg'; scale: number }) => void
 }
 
 export function ControlPanel({ settings, displayCount, onChange, onReset, onRandomize, onExport }: ControlPanelProps) {
@@ -599,11 +595,11 @@ export function ControlPanel({ settings, displayCount, onChange, onReset, onRand
           <Section title="Import" icon={<CreditCard className="w-3.5 h-3.5" />}>
             <div className="grid grid-cols-2 gap-2.5">
               <div>
-                <p className="text-[11px] text-black/35 mb-1.5 font-medium">Front</p>
+                <p className="text-[12px] text-black/60 font-medium mb-1.5">Front</p>
                 <DropZone label="Front face" image={settings.frontImage} onLoad={(url) => onChange({ frontImage: url })} />
               </div>
               <div>
-                <p className="text-[11px] text-black/35 mb-1.5 font-medium">Back</p>
+                <p className="text-[12px] text-black/60 font-medium mb-1.5">Back</p>
                 <DropZone label="Back face" image={settings.backImage} onLoad={(url) => onChange({ backImage: url })} />
               </div>
             </div>
