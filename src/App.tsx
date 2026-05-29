@@ -448,6 +448,12 @@ export default function App() {
         onSelect={handleSelectWorkspace}
         onAdd={handleAddWorkspace}
         onDelete={handleDeleteWorkspace}
+        savedPoses={savedPoses}
+        currentSettings={settings}
+        onSavePose={handleSavePose}
+        onApplyPose={handleApplyPose}
+        onDeletePose={handleDeletePose}
+        onRenamePose={handleRenamePose}
       />
 
       {/* ── Canvas area ── */}
@@ -456,12 +462,6 @@ export default function App() {
           onRestart={handleRestart}
           onLogoClick={handleLogoClick}
           logoColor={contrastColor(settings.bgColor)}
-          savedPoses={savedPoses}
-          currentSettings={settings}
-          onSavePose={handleSavePose}
-          onApplyPose={handleApplyPose}
-          onDeletePose={handleDeletePose}
-          onRenamePose={handleRenamePose}
         />
 
         <div

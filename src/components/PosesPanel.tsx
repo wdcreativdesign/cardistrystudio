@@ -139,7 +139,7 @@ export function PosesPanel({
     <div
       ref={panelRef}
       className={cn(
-        'absolute top-full mt-2 right-0 z-50',
+        'absolute left-full ml-3 top-0 z-50',
         'w-[220px]',
         'bg-white/95 backdrop-blur-xl',
         'rounded-2xl border border-black/[0.07]',

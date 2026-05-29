@@ -1,9 +1,10 @@
-import { Plus, X } from 'lucide-react'
+import { useState, useRef } from 'react'
+import { Plus, X, Bookmark } from 'lucide-react'
+import { PosesPanel } from './PosesPanel'
 import { cn } from '@/lib/utils'
-import { type Workspace } from '@/types'
+import { type Workspace, type SavedPose, type CardSettings } from '@/types'
 
 /* ── Card silhouette sizes ───────────────────────────────────────── */
-// aspect ratio: 85.6 × 54 mm → 1.585 wide:tall (horizontal)
 const CARD_RATIO = 85.6 / 54
 
 function cardDims(orientation: 'horizontal' | 'vertical', maxH: number) {
@@ -40,9 +41,8 @@ function WorkspaceThumb({
   const firstCard   = workspace.pages[0]
   const orientation = firstCard?.settings.orientation ?? 'horizontal'
 
-  // Compute card dims so all N cards + gaps fit within THUMB_W
   const totalGap = (count - 1) * GAP
-  const maxCardW = Math.floor((THUMB_W - totalGap - 8) / count) // 4px padding each side
+  const maxCardW = Math.floor((THUMB_W - totalGap - 8) / count)
   const maxCardH = THUMB_H - 8
   const isH      = orientation === 'horizontal'
 
@@ -76,11 +76,7 @@ function WorkspaceThumb({
           )}
           style={{ backgroundColor: '#e8e8ed' }}
         >
-          {/* Card silhouettes */}
-          <div
-            className="flex items-center"
-            style={{ gap: GAP, width: totalW }}
-          >
+          <div className="flex items-center" style={{ gap: GAP, width: totalW }}>
             {Array.from({ length: count }).map((_, i) => {
               const page = workspace.pages[i]
               const edgeColor = page?.settings.edgeColor ?? '#009FFF'
@@ -142,6 +138,12 @@ interface LeftPanelProps {
   onSelect:          (id: string) => void
   onAdd:             () => void
   onDelete:          (id: string) => void
+  savedPoses:        SavedPose[]
+  currentSettings:   CardSettings
+  onSavePose:        (pose: SavedPose) => void
+  onApplyPose:       (pose: SavedPose) => void
+  onDeletePose:      (id: string) => void
+  onRenamePose:      (id: string, name: string) => void
 }
 
 export function LeftPanel({
@@ -150,7 +152,16 @@ export function LeftPanel({
   onSelect,
   onAdd,
   onDelete,
+  savedPoses,
+  currentSettings,
+  onSavePose,
+  onApplyPose,
+  onDeletePose,
+  onRenamePose,
 }: LeftPanelProps) {
+  const [posesOpen, setPosesOpen] = useState(false)
+  const posesButtonRef = useRef<HTMLButtonElement>(null)
+
   return (
     <div
       className={cn(
@@ -162,10 +173,44 @@ export function LeftPanel({
         'p-2',
       )}
     >
-      {/* Workspace list */}
+      {/* ── Poses button ── */}
+      <button
+        ref={posesButtonRef}
+        onClick={() => setPosesOpen((o) => !o)}
+        title="Saved poses"
+        className={cn(
+          'w-8 h-8 rounded-[10px] flex-shrink-0',
+          'flex items-center justify-center',
+          'transition-all active:scale-95 cursor-pointer',
+          posesOpen
+            ? 'bg-black/[0.09] text-black/70'
+            : 'bg-black/[0.04] hover:bg-black/[0.09] text-black/30 hover:text-black/60',
+        )}
+      >
+        <Bookmark className="w-3.5 h-3.5" />
+      </button>
+
+      {/* PosesPanel — opens to the right */}
+      {posesOpen && (
+        <PosesPanel
+          savedPoses={savedPoses}
+          currentSettings={currentSettings}
+          onSave={onSavePose}
+          onApply={onApplyPose}
+          onDelete={onDeletePose}
+          onRename={onRenamePose}
+          onClose={() => setPosesOpen(false)}
+          anchorRef={posesButtonRef}
+        />
+      )}
+
+      {/* Divider */}
+      <div className="w-full h-px bg-black/[0.07]" />
+
+      {/* ── Workspace list ── */}
       <div
         className="flex flex-col items-center gap-2 overflow-y-auto"
-        style={{ maxHeight: 'calc(100vh - 140px)', scrollbarWidth: 'none' }}
+        style={{ maxHeight: 'calc(100vh - 180px)', scrollbarWidth: 'none' }}
       >
         {workspaces.map((ws, i) => (
           <WorkspaceThumb
@@ -183,7 +228,7 @@ export function LeftPanel({
       {/* Divider */}
       <div className="w-full h-px bg-black/[0.07]" />
 
-      {/* Add workspace button */}
+      {/* ── Add workspace button ── */}
       <button
         onClick={onAdd}
         title="New workspace"
