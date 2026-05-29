@@ -7,9 +7,9 @@ const CORS = {
 }
 
 const CREDIT_PACKS: Record<string, number> = {
-  'price_1TcWPgRweuBuHe9C7xCFXP8W': 50,   // Starter
-  'price_1TcWQCRweuBuHe9CQmFbyQqJ': 100,  // Pro
-  'price_1TcWQQRweuBuHe9C93Arf6ne': 500,  // Studio
+  'price_1TcYdQRoCyUZdpCt4JmGQytW': 50,   // Starter live
+  'price_1TcYdQRoCyUZdpCtIkWOFp3s': 100,  // Pro live
+  'price_1TcYdQRoCyUZdpCtV66jq7nu': 500,  // Studio live
 }
 
 function decodeJwt(token: string): { sub?: string } | null {
