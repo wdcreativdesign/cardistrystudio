@@ -217,9 +217,11 @@ export function Card3D({ settings, tilt, isActive = false }: Card3DProps) {
   const cfg = FINISH_CONFIGS[settings.finish]
 
   const faceMat = {
-    metalness:       cfg.metalness * 0.5,
-    roughness:       cfg.roughness,
-    envMapIntensity: cfg.envMapIntensity,
+    metalness:          cfg.metalness * 0.5,
+    roughness:          cfg.roughness,
+    envMapIntensity:    cfg.envMapIntensity,
+    clearcoat:          cfg.clearcoat,
+    clearcoatRoughness: cfg.clearcoatRoughness,
   }
 
   const Z_FACE  = CARD_D / 2 + 0.0002   // léger décalage anti z-fighting
@@ -255,11 +257,13 @@ export function Card3D({ settings, tilt, isActive = false }: Card3DProps) {
 
       {/* ── Corps (tranche) — ExtrudeGeometry centrée sur Z ──────── */}
       <mesh geometry={bodyGeo} castShadow>
-        <meshStandardMaterial
+        <meshPhysicalMaterial
           color={settings.edgeColor}
           metalness={cfg.metalness}
           roughness={cfg.roughness}
           envMapIntensity={cfg.envMapIntensity}
+          clearcoat={cfg.clearcoat * 0.5}
+          clearcoatRoughness={cfg.clearcoatRoughness}
           polygonOffset
           polygonOffsetFactor={1}
           polygonOffsetUnits={1}
@@ -268,7 +272,7 @@ export function Card3D({ settings, tilt, isActive = false }: Card3DProps) {
 
       {/* ── Recto ────────────────────────────────────────────────── */}
       <mesh geometry={faceGeo} position={[0, 0, Z_FACE]}>
-        <meshStandardMaterial
+        <meshPhysicalMaterial
           key={frontTex?.uuid ?? 'front-blank'}
           color={frontTex ? '#ffffff' : '#080808'}
           map={frontTex ?? undefined}
@@ -278,7 +282,7 @@ export function Card3D({ settings, tilt, isActive = false }: Card3DProps) {
 
       {/* ── Verso (rotation Y 180° → normale vers -Z) ────────────── */}
       <mesh geometry={faceGeo} position={[0, 0, -Z_FACE]} rotation={[0, Math.PI, 0]}>
-        <meshStandardMaterial
+        <meshPhysicalMaterial
           key={backTex?.uuid ?? 'back-blank'}
           color={backTex ? '#ffffff' : '#080808'}
           map={backTex ?? undefined}

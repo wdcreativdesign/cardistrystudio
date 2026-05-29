@@ -70,7 +70,7 @@ export default function App() {
   }, [])
 
   /* ── Credits ── */
-  const { balance: credits } = useCredits(currentUser?.id)
+  const { balance: credits, loading: creditsLoading } = useCredits(currentUser?.id)
 
   /* ── Handle ?credits=ok return from Stripe ── */
   useEffect(() => {
@@ -359,24 +359,28 @@ export default function App() {
     // No authenticated user (dev skip) — export directly without credit check
     if (!currentUser) { doExport(opts); return }
 
+    // Still loading balance — don't open modal, just wait
+    if (creditsLoading) return
+
     if ((credits ?? 0) < EXPORT_COST) {
       setShowBuyCredits(true)
       return
     }
 
-    const { data: ok } = await supabase.rpc('spend_credits', {
+    const { error } = await supabase.rpc('spend_credits', {
       p_user_id: currentUser.id,
       p_amount:  EXPORT_COST,
       p_reason:  'export',
     })
 
-    if (!ok) {
+    if (error) {
+      console.error('spend_credits error:', error)
       setShowBuyCredits(true)
       return
     }
 
     doExport(opts)
-  }, [currentUser, credits, doExport])
+  }, [currentUser, credits, creditsLoading, doExport])
 
   /* ── Drag / rotate / translate ── */
   const onPointerDown = useCallback((e: React.PointerEvent<HTMLDivElement>) => {

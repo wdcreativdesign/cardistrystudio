@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { X, Zap, Loader2 } from 'lucide-react'
+import { X, Zap, Loader2, Infinity } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { cn } from '@/lib/utils'
 import { EXPORT_COST } from '@/hooks/useCredits'
@@ -11,8 +11,8 @@ const PACKS = [
     price:      '2,99 €',
     credits:    50,
     priceId:    'price_1TcYdQRoCyUZdpCt4JmGQytW',
-    perExport:  '0,30 €',
     popular:    false,
+    unlimited:  false,
   },
   {
     id:         'pro',
@@ -20,8 +20,8 @@ const PACKS = [
     price:      '4,99 €',
     credits:    100,
     priceId:    'price_1TcYdQRoCyUZdpCtIkWOFp3s',
-    perExport:  '0,25 €',
     popular:    true,
+    unlimited:  false,
   },
   {
     id:         'studio',
@@ -29,8 +29,17 @@ const PACKS = [
     price:      '9,99 €',
     credits:    500,
     priceId:    'price_1TcYdQRoCyUZdpCtV66jq7nu',
-    perExport:  '0,10 €',
     popular:    false,
+    unlimited:  false,
+  },
+  {
+    id:         'unlimited',
+    name:       'Unlimited',
+    price:      '24,99 €',
+    credits:    10000,
+    priceId:    'price_1TcZPpRoCyUZdpCthzlpOu7H',
+    popular:    false,
+    unlimited:  true,
   },
 ] as const
 
@@ -91,6 +100,42 @@ export function BuyCreditsModal({ currentBalance, onClose }: BuyCreditsModalProp
         <div className="px-6 pb-6 space-y-2">
           {PACKS.map((pack) => {
             const isLoading = loading === pack.id
+            const isUnlimited = pack.unlimited
+
+            if (isUnlimited) {
+              return (
+                <button
+                  key={pack.id}
+                  onClick={() => handleBuy(pack.priceId, pack.id)}
+                  disabled={!!loading}
+                  className={cn(
+                    'w-full flex items-center justify-between px-4 py-3.5 rounded-xl border transition-all text-left',
+                    'bg-[#1a1a1a] hover:bg-[#222222] border-black/20 active:scale-[0.99]',
+                    !!loading && !isLoading && 'opacity-50',
+                  )}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-7 h-7 rounded-lg bg-white/10 flex items-center justify-center flex-shrink-0">
+                      {isLoading
+                        ? <Loader2 className="w-3.5 h-3.5 animate-spin text-white/60" />
+                        : <Infinity className="w-3.5 h-3.5 text-white/70" />
+                      }
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-[13px] font-semibold text-white/90">{pack.name}</span>
+                        <span className="text-[9px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-md bg-white/10 text-white/50">
+                          Best value
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-white/35 mt-0.5">10 000 credits · 0,01 € / export</p>
+                    </div>
+                  </div>
+                  <span className="text-[14px] font-semibold text-white/80 flex-shrink-0">{pack.price}</span>
+                </button>
+              )
+            }
+
             return (
               <button
                 key={pack.id}

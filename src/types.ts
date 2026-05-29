@@ -52,6 +52,8 @@ export interface FinishConfig {
   roughness: number
   envMapIntensity: number
   edgeColor: string
+  clearcoat: number
+  clearcoatRoughness: number
 }
 
 export const FINISH_CONFIGS: Record<Finish, FinishConfig> = {
@@ -59,21 +61,27 @@ export const FINISH_CONFIGS: Record<Finish, FinishConfig> = {
     label: 'Metallic',
     metalness: 0.96,
     roughness: 0.04,
-    envMapIntensity: 3.0,
+    envMapIntensity: 3.2,
     edgeColor: '#b0b0b8',
+    clearcoat: 0.6,
+    clearcoatRoughness: 0.03,
   },
   plastic: {
     label: 'Plastic',
     metalness: 0.04,
-    roughness: 0.32,
-    envMapIntensity: 0.8,
+    roughness: 0.28,
+    envMapIntensity: 1.0,
     edgeColor: '#f0f0f0',
+    clearcoat: 0.9,
+    clearcoatRoughness: 0.1,
   },
   matte: {
     label: 'Matte',
     metalness: 0.0,
-    roughness: 0.9,
-    envMapIntensity: 0.15,
+    roughness: 0.88,
+    envMapIntensity: 0.18,
     edgeColor: '#e8e8e8',
+    clearcoat: 0.04,
+    clearcoatRoughness: 0.6,
   },
 }

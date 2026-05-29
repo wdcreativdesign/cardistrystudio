@@ -1,4 +1,4 @@
-import { RotateCcw, LogOut, Zap } from 'lucide-react'
+import { RotateCcw, LogOut, Zap, Infinity } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { FeedbackButton } from './FeedbackButton'
 import { cn } from '@/lib/utils'
@@ -66,8 +66,10 @@ export function Header({
               btnClass,
             )}
           >
-            <Zap className="w-3 h-3 flex-shrink-0" />
-            {credits}
+            {credits >= 1000
+              ? <Infinity className="w-3.5 h-3.5 flex-shrink-0" />
+              : <><Zap className="w-3 h-3 flex-shrink-0" />{credits}</>
+            }
           </button>
         )}
 

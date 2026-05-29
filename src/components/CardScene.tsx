@@ -47,40 +47,56 @@ function SceneBackground({ color }: { color: string }) {
 /* ─── Custom gradient environment ────────────────────────────────── */
 function GradientEnvironment() {
   const envMap = useMemo(() => {
-    const W = 1024, H = 512
+    const W = 2048, H = 1024
     const canvas = document.createElement('canvas')
     canvas.width = W; canvas.height = H
     const ctx = canvas.getContext('2d')!
 
+    // Base sky — cool blue-white gradient
     const base = ctx.createLinearGradient(0, 0, 0, H)
-    base.addColorStop(0,   '#f0f0f8')
-    base.addColorStop(0.5, '#e6e6f0')
-    base.addColorStop(1,   '#d8d8e8')
+    base.addColorStop(0,   '#eeeef8')
+    base.addColorStop(0.4, '#e4e4f0')
+    base.addColorStop(1,   '#d0d0e4')
     ctx.fillStyle = base
     ctx.fillRect(0, 0, W, H)
 
-    const key = ctx.createRadialGradient(W * 0.68, H * 0.06, 0, W * 0.68, H * 0.06, W * 0.44)
-    key.addColorStop(0,    'rgba(255,255,255,0.95)')
-    key.addColorStop(0.35, 'rgba(255,255,255,0.35)')
+    // Primary key — bright studio light top-right
+    const key = ctx.createRadialGradient(W * 0.70, H * 0.04, 0, W * 0.70, H * 0.04, W * 0.52)
+    key.addColorStop(0,    'rgba(255,255,255,1.0)')
+    key.addColorStop(0.12, 'rgba(255,255,255,0.95)')
+    key.addColorStop(0.32, 'rgba(255,255,255,0.5)')
+    key.addColorStop(0.6,  'rgba(255,255,255,0.18)')
     key.addColorStop(1,    'rgba(255,255,255,0)')
     ctx.fillStyle = key
     ctx.fillRect(0, 0, W, H)
 
-    const fill = ctx.createRadialGradient(W * 0.08, H * 0.18, 0, W * 0.08, H * 0.18, W * 0.38)
-    fill.addColorStop(0, 'rgba(190,210,255,0.5)')
-    fill.addColorStop(1, 'rgba(190,210,255,0)')
+    // Specular hot-spot — tight bright core for sharp reflections
+    const hotspot = ctx.createRadialGradient(W * 0.68, H * 0.03, 0, W * 0.68, H * 0.03, W * 0.12)
+    hotspot.addColorStop(0,   'rgba(255,255,255,1.0)')
+    hotspot.addColorStop(0.5, 'rgba(255,255,255,0.6)')
+    hotspot.addColorStop(1,   'rgba(255,255,255,0)')
+    ctx.fillStyle = hotspot
+    ctx.fillRect(0, 0, W, H)
+
+    // Fill light — soft blue left side
+    const fill = ctx.createRadialGradient(W * 0.06, H * 0.16, 0, W * 0.06, H * 0.16, W * 0.45)
+    fill.addColorStop(0, 'rgba(180,205,255,0.65)')
+    fill.addColorStop(0.5, 'rgba(180,205,255,0.2)')
+    fill.addColorStop(1, 'rgba(180,205,255,0)')
     ctx.fillStyle = fill
     ctx.fillRect(0, 0, W, H)
 
-    const rim = ctx.createRadialGradient(W * 0.1, H * 0.38, 0, W * 0.1, H * 0.38, W * 0.28)
-    rim.addColorStop(0, 'rgba(215,222,255,0.32)')
-    rim.addColorStop(1, 'rgba(215,222,255,0)')
+    // Rim light — cool blue-white from behind-left
+    const rim = ctx.createRadialGradient(W * 0.08, H * 0.35, 0, W * 0.08, H * 0.35, W * 0.30)
+    rim.addColorStop(0, 'rgba(210,220,255,0.45)')
+    rim.addColorStop(1, 'rgba(210,220,255,0)')
     ctx.fillStyle = rim
     ctx.fillRect(0, 0, W, H)
 
-    const bounce = ctx.createRadialGradient(W * 0.5, H * 0.88, 0, W * 0.5, H * 0.88, W * 0.28)
-    bounce.addColorStop(0, 'rgba(245,240,230,0.22)')
-    bounce.addColorStop(1, 'rgba(245,240,230,0)')
+    // Ground bounce — warm tone from below
+    const bounce = ctx.createRadialGradient(W * 0.5, H * 0.92, 0, W * 0.5, H * 0.92, W * 0.35)
+    bounce.addColorStop(0, 'rgba(248,242,225,0.30)')
+    bounce.addColorStop(1, 'rgba(248,242,225,0)')
     ctx.fillStyle = bounce
     ctx.fillRect(0, 0, W, H)
 
@@ -93,6 +109,16 @@ function GradientEnvironment() {
   useEffect(() => () => { envMap.dispose() }, [envMap])
 
   return <Environment map={envMap} />
+}
+
+/* ─── ACES filmic tone mapping ───────────────────────────────────── */
+function ToneMapping() {
+  const { gl } = useThree()
+  useEffect(() => {
+    gl.toneMapping         = THREE.ACESFilmicToneMapping
+    gl.toneMappingExposure = 1.05
+  }, [gl])
+  return null
 }
 
 /* ─── Scene helper — exposes gl / scene / camera refs ───────────── */
@@ -118,11 +144,18 @@ function SceneHelper({
 function Lighting({ intensity: i }: { intensity: number }) {
   return (
     <>
-      <ambientLight intensity={0.55 * i} color="#f2f2ff" />
-      <directionalLight position={[5, 9, 5]}   intensity={1.2 * i}  color="#ffffff" />
-      <directionalLight position={[-5, 3, 4]}  intensity={0.3 * i}  color="#dce8ff" />
-      <directionalLight position={[1, 5, -7]}  intensity={0.2 * i}  color="#eeeeff" />
-      <pointLight       position={[0, -2.5, 3]} intensity={0.12 * i} color="#fff6ee" decay={2} />
+      {/* Ambient — slightly dimmer so specular stands out more */}
+      <ambientLight intensity={0.42 * i} color="#f0f0ff" />
+      {/* Key light — strong, top-right, matches env map hot-spot */}
+      <directionalLight position={[5, 9, 5]}   intensity={1.6 * i}  color="#ffffff"  castShadow />
+      {/* Fill — soft blue from left */}
+      <directionalLight position={[-6, 3, 4]}  intensity={0.38 * i} color="#d8e8ff" />
+      {/* Rim — cool backlight */}
+      <directionalLight position={[1, 4, -8]}  intensity={0.22 * i} color="#e8eeff" />
+      {/* Front specular accent — tight point light */}
+      <pointLight       position={[2.5, 4, 6]}  intensity={0.55 * i} color="#ffffff"  decay={2} />
+      {/* Ground warm bounce */}
+      <pointLight       position={[0, -2.5, 3]} intensity={0.08 * i} color="#fff4e0"  decay={2} />
     </>
   )
 }
@@ -190,14 +223,15 @@ export function CardScene({ displayedPages, displayCount, tilt, glRef, sceneRef,
         }
         <ContactShadows
           position={[0, -1.75, 0]}
-          opacity={0.16}
+          opacity={0.22}
           scale={shadowScale}
-          blur={3.5}
+          blur={2.2}
           far={2.8}
-          color="#8888aa"
+          color="#5566aa"
         />
       </group>
 
+      <ToneMapping />
       <Lighting intensity={lightIntensity} />
       <GradientEnvironment />
 

@@ -532,11 +532,11 @@ function ExportTab({
       <div className="px-5 py-5">
         <button
           onClick={() => onExport({ format, scale })}
-          className="w-full flex items-center justify-center gap-2 bg-[#1a1a1a] hover:bg-[#2d2d2d] text-white text-[13px] font-medium py-2.5 rounded-xl transition-all active:scale-[0.98]"
+          className="relative w-full flex items-center justify-center gap-2 bg-[#1a1a1a] hover:bg-[#2d2d2d] text-white text-[13px] font-semibold py-3 rounded-xl transition-all active:scale-[0.98] shadow-sm"
         >
           <Download className="w-3.5 h-3.5" />
           {exportLabel}
-          <span className="ml-auto text-[11px] text-white/40 font-normal flex items-center gap-0.5">
+          <span className="absolute right-3.5 flex items-center gap-1 bg-white/[0.1] rounded-lg px-2 py-1 text-[10px] text-white/45 font-medium">
             <Zap className="w-2.5 h-2.5" />5
           </span>
         </button>
