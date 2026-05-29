@@ -1,76 +1,57 @@
 import { useRef, useCallback, useState, useEffect } from 'react'
 import {
-  ImageUp, RotateCcw, Play, Pause, Sun, RefreshCcw, CreditCard,
-  Pipette, Eye, Layers, Download, Move, ChevronDown, Shuffle,
+  ImageUp, RotateCcw, Play, Pause, Sun, RefreshCcw, CreditCard, Pipette, Eye, Layers, Download, Move, ChevronDown, Shuffle,
 } from 'lucide-react'
-import { Slider }    from '@/components/ui/slider'
-import { Switch }    from '@/components/ui/switch'
+import { Slider } from '@/components/ui/slider'
+import { Label } from '@/components/ui/label'
+import { Switch } from '@/components/ui/switch'
 import { Separator } from '@/components/ui/separator'
-import { Button }    from '@/components/ui/button'
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import { cn } from '@/lib/utils'
 import { type CardSettings } from '@/types'
 
-/* ─── Helpers ──────────────────────────────────────────────────────── */
+/* ─── Helpers ──────────────────────────────────────────────────── */
 function fmt(v: number, unit = '°') {
-  const r = Math.round(v)
-  return `${r > 0 ? '+' : ''}${r}${unit}`
+  const rounded = Math.round(v)
+  return `${rounded > 0 ? '+' : ''}${rounded}${unit}`
 }
 
-function fmtPos(v: number) {
-  const r = Math.round(v * 10) / 10
-  return `${r > 0 ? '+' : ''}${r.toFixed(1)}`
-}
-
-/* ─── Section ──────────────────────────────────────────────────────── */
-function Section({
-  title, icon, children, defaultOpen = true,
-}: {
+function Section({ title, icon, children, defaultOpen = true }: {
   title: string
-  icon:  React.ReactNode
+  icon: React.ReactNode
   children: React.ReactNode
   defaultOpen?: boolean
 }) {
   const [open, setOpen] = useState(defaultOpen)
   return (
-    <div className="px-4 py-4">
+    <div className="px-5 py-4">
       <button
         onClick={() => setOpen((o) => !o)}
         className="w-full flex items-center justify-between gap-2 group"
       >
         <div className="flex items-center gap-2">
-          <span className="text-muted-foreground/40 [&_svg]:size-3.5">{icon}</span>
-          <span className="text-[10.5px] font-semibold uppercase tracking-[0.1em] text-muted-foreground/60">
-            {title}
-          </span>
+          <span className="text-black/30">{icon}</span>
+          <Label className="text-black/35 cursor-pointer select-none">{title}</Label>
         </div>
         <ChevronDown
           className={cn(
-            'size-3.5 text-muted-foreground/25 transition-transform duration-200 group-hover:text-muted-foreground/50',
+            'w-3 h-3 text-black/20 transition-transform duration-200 group-hover:text-black/40',
             open ? 'rotate-0' : '-rotate-90',
           )}
         />
       </button>
-
-      <div
-        className={cn(
-          'grid transition-all duration-200 ease-in-out',
-          open ? 'grid-rows-[1fr] mt-4' : 'grid-rows-[0fr]',
-        )}
-      >
+      <div className={cn(
+        'grid transition-all duration-200 ease-in-out',
+        open ? 'grid-rows-[1fr] mt-4' : 'grid-rows-[0fr]',
+      )}>
         <div className="overflow-hidden">
-          <div className="space-y-4">{children}</div>
+          <div className="space-y-5">{children}</div>
         </div>
       </div>
     </div>
   )
 }
 
-/* ─── SliderRow ────────────────────────────────────────────────────── */
-function SliderRow({
-  label, value, min, max, step = 1, unit = '°', format: fmtFn, onChange,
-}: {
+function SliderRow({ label, value, min, max, step = 1, unit = '°', format: fmtFn, onChange }: {
   label: string
   value: number
   min: number
@@ -86,22 +67,30 @@ function SliderRow({
 
   const display = fmtFn ? fmtFn(value) : fmt(value, unit)
 
-  function startEdit() { setInputVal(String(value)); setEditing(true) }
+  function startEdit() {
+    setInputVal(String(value))
+    setEditing(true)
+  }
 
   function commitEdit(raw = inputVal) {
     const parsed = parseFloat(raw)
-    if (!isNaN(parsed)) onChange(Math.min(max, Math.max(min, parsed)))
+    if (!isNaN(parsed)) {
+      onChange(Math.min(max, Math.max(min, parsed)))
+    }
     setEditing(false)
   }
 
   useEffect(() => {
-    if (editing) { inputRef.current?.focus(); inputRef.current?.select() }
+    if (editing) {
+      inputRef.current?.focus()
+      inputRef.current?.select()
+    }
   }, [editing])
 
   return (
     <div className="space-y-2.5">
       <div className="flex items-center justify-between">
-        <span className="text-xs text-muted-foreground font-medium">{label}</span>
+        <span className="text-[12px] text-black/60 font-medium">{label}</span>
         {editing ? (
           <input
             ref={inputRef}
@@ -113,15 +102,19 @@ function SliderRow({
               if (e.key === 'Enter')  { e.preventDefault(); commitEdit() }
               if (e.key === 'Escape') setEditing(false)
             }}
-            className="h-5 w-14 text-right text-[11px] font-mono tabular-nums rounded-lg border border-ring bg-background px-1.5 focus:outline-none focus:ring-2 focus:ring-ring/30"
+            className="text-[11px] font-mono tabular-nums w-14 text-right rounded-md px-1.5 py-0.5 bg-blue-50 text-blue-600 border border-blue-200 focus:outline-none focus:border-blue-400"
           />
         ) : (
-          <button
+          <span
+            role="button"
+            tabIndex={0}
             onClick={startEdit}
-            className="text-[11px] text-muted-foreground/45 font-mono tabular-nums w-14 text-right cursor-text rounded-lg px-1.5 py-0.5 hover:bg-muted hover:text-muted-foreground transition-colors select-none"
+            onKeyDown={(e) => e.key === 'Enter' && startEdit()}
+            title="Click to edit"
+            className="text-[11px] text-black/35 font-mono tabular-nums w-14 text-right cursor-text rounded-md px-1.5 py-0.5 hover:bg-black/[0.05] hover:text-black/55 transition-colors select-none"
           >
             {display}
-          </button>
+          </span>
         )}
       </div>
       <Slider
@@ -133,27 +126,32 @@ function SliderRow({
   )
 }
 
-/* ─── Quick view icons ─────────────────────────────────────────────── */
+function fmtPos(v: number) {
+  const r = Math.round(v * 10) / 10
+  return `${r > 0 ? '+' : ''}${r.toFixed(1)}`
+}
+
+/* ─── Quick view icons ──────────────────────────────────────────── */
 function IsoLeftIcon() {
   return (
-    <svg viewBox="0 0 32 20" fill="none" style={{ width: 28, height: 18 }}>
-      <path d="M2 14.5 L2 6 L8 4 L8 12.5 Z" fill="currentColor" fillOpacity="0.5" />
-      <rect x="8" y="4" width="21" height="12" rx="1.8" fill="currentColor" fillOpacity="0.08" stroke="currentColor" strokeWidth="1.3" />
+    <svg viewBox="0 0 32 20" fill="none" style={{ width: 30, height: 19 }}>
+      <path d="M2 14.5 L2 6 L8 4 L8 12.5 Z" fill="currentColor" fillOpacity="0.45" />
+      <rect x="8" y="4" width="21" height="12" rx="1.8" fill="currentColor" fillOpacity="0.1" stroke="currentColor" strokeWidth="1.3" />
     </svg>
   )
 }
 function FrontIcon() {
   return (
-    <svg viewBox="0 0 32 20" fill="none" style={{ width: 28, height: 18 }}>
-      <rect x="4" y="4" width="24" height="12" rx="1.8" fill="currentColor" fillOpacity="0.08" stroke="currentColor" strokeWidth="1.3" />
+    <svg viewBox="0 0 32 20" fill="none" style={{ width: 30, height: 19 }}>
+      <rect x="4" y="4" width="24" height="12" rx="1.8" fill="currentColor" fillOpacity="0.1" stroke="currentColor" strokeWidth="1.3" />
     </svg>
   )
 }
 function IsoRightIcon() {
   return (
-    <svg viewBox="0 0 32 20" fill="none" style={{ width: 28, height: 18 }}>
-      <rect x="3" y="4" width="21" height="12" rx="1.8" fill="currentColor" fillOpacity="0.08" stroke="currentColor" strokeWidth="1.3" />
-      <path d="M24 4 L30 6 L30 14.5 L24 12.5 Z" fill="currentColor" fillOpacity="0.5" />
+    <svg viewBox="0 0 32 20" fill="none" style={{ width: 30, height: 19 }}>
+      <rect x="3" y="4" width="21" height="12" rx="1.8" fill="currentColor" fillOpacity="0.1" stroke="currentColor" strokeWidth="1.3" />
+      <path d="M24 4 L30 6 L30 14.5 L24 12.5 Z" fill="currentColor" fillOpacity="0.45" />
     </svg>
   )
 }
@@ -164,7 +162,7 @@ const VIEW_PRESETS = [
   { id: 'iso-right', label: 'Right iso', icon: IsoRightIcon, rotX: -18, rotY:  32, rotZ: 0 },
 ] as const
 
-/* ─── Drop zone ────────────────────────────────────────────────────── */
+/* ─── Drop zone ─────────────────────────────────────────────────── */
 function DropZone({ label, image, onLoad }: {
   label: string
   image: string | null
@@ -188,7 +186,7 @@ function DropZone({ label, image, onLoad }: {
 
   return (
     <div
-      className="drop-zone relative rounded-xl border border-dashed border-border hover:border-muted-foreground/30 bg-muted/30 hover:bg-muted/50 transition-all cursor-pointer overflow-hidden"
+      className="drop-zone relative rounded-xl border border-dashed border-black/12 bg-black/[0.025] hover:bg-black/[0.04] hover:border-black/20 transition-all cursor-pointer overflow-hidden"
       style={{ aspectRatio: '1.5874 / 1' }}
       onClick={() => inputRef.current?.click()}
       onDrop={handleDrop}
@@ -199,16 +197,16 @@ function DropZone({ label, image, onLoad }: {
         <>
           <img src={image} alt={label} className="absolute inset-0 w-full h-full object-cover" />
           <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/50 opacity-0 hover:opacity-100 transition-opacity rounded-xl">
-            <RefreshCcw className="size-4 text-white mb-1.5" />
+            <RefreshCcw className="w-5 h-5 text-white mb-1.5" />
             <span className="text-white text-xs font-medium">Change</span>
           </div>
         </>
       ) : (
         <div className="absolute inset-0 flex flex-col items-center justify-center gap-2">
-          <ImageUp className="size-4 text-muted-foreground/35" />
+          <ImageUp className="w-5 h-5 text-black/25" />
           <div className="text-center">
-            <p className="text-[11px] text-muted-foreground/55 font-medium">{label}</p>
-            <p className="text-[10px] text-muted-foreground/30 mt-0.5">PNG · JPG · SVG</p>
+            <p className="text-[11px] text-black/45 font-medium">{label}</p>
+            <p className="text-[10px] text-black/25 mt-0.5">PNG · JPG · SVG</p>
           </div>
         </div>
       )}
@@ -223,7 +221,7 @@ function DropZone({ label, image, onLoad }: {
   )
 }
 
-/* ─── Background section ───────────────────────────────────────────── */
+/* ─── Background section ────────────────────────────────────────── */
 const BG_SOLID_PRESETS = [
   { value: '#f0f0f5',     style: { background: '#f0f0f5' } },
   { value: '#1a1a1a',     style: { background: '#1a1a1a' } },
@@ -242,6 +240,7 @@ const GRAD_DIRS = [
 function isGradValue(v: string) {
   return v.startsWith('linear-gradient') || v.startsWith('radial-gradient')
 }
+
 function parseGradValue(v: string) {
   const lin = v.match(/linear-gradient\((\d+)deg,\s*(#[0-9a-fA-F]{6}),\s*(#[0-9a-fA-F]{6})\)/)
   if (lin) return { c1: lin[2], c2: lin[3], angle: parseInt(lin[1]), radial: false }
@@ -249,6 +248,7 @@ function parseGradValue(v: string) {
   if (rad) return { c1: rad[1], c2: rad[2], angle: 0, radial: true }
   return null
 }
+
 function buildGradValue(c1: string, c2: string, angle: number, radial: boolean) {
   return radial
     ? `radial-gradient(circle, ${c1}, ${c2})`
@@ -259,11 +259,13 @@ function BgSection({ value, onChange }: { value: string; onChange: (v: string) =
   const gradMode = isGradValue(value)
   const parsed   = gradMode ? parseGradValue(value) : null
 
-  const [solidHex, setSolidHex] = useState(!gradMode && value !== 'transparent' ? value : '#f0f0f5')
-  const [c1,       setC1]       = useState(parsed?.c1    ?? '#1a1a1a')
-  const [c2,       setC2]       = useState(parsed?.c2    ?? '#009FFF')
-  const [angle,    setAngle]    = useState(parsed?.angle ?? 135)
-  const [radial,   setRadial]   = useState(parsed?.radial ?? false)
+  const [solidHex, setSolidHex] = useState(
+    !gradMode && value !== 'transparent' ? value : '#f0f0f5',
+  )
+  const [c1,     setC1]     = useState(parsed?.c1    ?? '#1a1a1a')
+  const [c2,     setC2]     = useState(parsed?.c2    ?? '#009FFF')
+  const [angle,  setAngle]  = useState(parsed?.angle ?? 135)
+  const [radial, setRadial] = useState(parsed?.radial ?? false)
 
   useEffect(() => {
     if (isGradValue(value)) {
@@ -286,33 +288,28 @@ function BgSection({ value, onChange }: { value: string; onChange: (v: string) =
 
   return (
     <div className="space-y-3">
+
       {/* Mode toggle */}
-      <ToggleGroup
-        type="single"
-        value={gradMode ? 'gradient' : 'solid'}
-        onValueChange={(v) => {
-          if (!v) return
-          if (v === 'solid') onChange(solidHex)
-          else if (!gradMode) fireGrad()
-        }}
-        variant="outline"
-        spacing={0}
-        className="w-full"
-        size="sm"
-      >
-        <ToggleGroupItem
-          value="solid"
-          className="flex-1 text-xs data-[state=on]:bg-background data-[state=on]:shadow-sm"
+      <div className="flex gap-0.5 p-0.5 bg-black/[0.05] rounded-xl">
+        <button
+          onClick={() => onChange(solidHex)}
+          className={cn(
+            'flex-1 text-[11px] font-medium py-1.5 rounded-[10px] transition-all',
+            !gradMode ? 'bg-white shadow-sm text-black/70' : 'text-black/35 hover:text-black/55',
+          )}
         >
           Solid
-        </ToggleGroupItem>
-        <ToggleGroupItem
-          value="gradient"
-          className="flex-1 text-xs data-[state=on]:bg-background data-[state=on]:shadow-sm"
+        </button>
+        <button
+          onClick={() => { if (!gradMode) fireGrad() }}
+          className={cn(
+            'flex-1 text-[11px] font-medium py-1.5 rounded-[10px] transition-all',
+            gradMode ? 'bg-white shadow-sm text-black/70' : 'text-black/35 hover:text-black/55',
+          )}
         >
           Gradient
-        </ToggleGroupItem>
-      </ToggleGroup>
+        </button>
+      </div>
 
       {!gradMode ? (
         /* ── Solid ── */
@@ -323,10 +320,10 @@ function BgSection({ value, onChange }: { value: string; onChange: (v: string) =
                 key={p.value}
                 onClick={() => { onChange(p.value); if (p.value !== 'transparent') setSolidHex(p.value) }}
                 className={cn(
-                  'flex-1 h-8 rounded-xl border-2 transition-all',
+                  'w-9 h-9 rounded-xl border-2 transition-all flex-shrink-0',
                   value === p.value
-                    ? 'border-foreground/60 scale-110 shadow-md'
-                    : 'border-border hover:border-muted-foreground/40 hover:scale-105',
+                    ? 'border-black/60 scale-110 shadow-md'
+                    : 'border-black/10 hover:border-black/30 hover:scale-105',
                 )}
                 style={p.style}
               />
@@ -334,12 +331,10 @@ function BgSection({ value, onChange }: { value: string; onChange: (v: string) =
           </div>
           <div className="flex items-center gap-2">
             <div
-              className="size-7 rounded-lg border border-border flex-shrink-0"
-              style={{
-                background: value === 'transparent'
-                  ? 'repeating-conic-gradient(#ccc 0% 25%, #fff 0% 50%) 0 0 / 8px 8px'
-                  : value,
-              }}
+              className="w-6 h-6 rounded-md border border-black/10 flex-shrink-0"
+              style={{ background: value === 'transparent'
+                ? 'repeating-conic-gradient(#ccc 0% 25%, #fff 0% 50%) 0 0 / 8px 8px'
+                : value }}
             />
             <input
               type="text"
@@ -348,7 +343,7 @@ function BgSection({ value, onChange }: { value: string; onChange: (v: string) =
               onChange={(e) => setSolidHex(e.target.value)}
               onBlur={(e) => handleSolidHex(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleSolidHex(solidHex)}
-              className="flex-1 h-8 text-xs font-mono px-2.5 rounded-2xl border border-input bg-input/50 focus:outline-none focus:ring-2 focus:ring-ring/30 focus:border-ring placeholder:text-muted-foreground/40 uppercase tracking-wider transition-all"
+              className="flex-1 text-[11px] font-mono px-2.5 py-1.5 rounded-lg border border-black/10 bg-black/[0.025] focus:outline-none focus:border-black/25 focus:bg-white transition-all placeholder:text-black/20 uppercase"
               maxLength={7}
             />
           </div>
@@ -358,13 +353,14 @@ function BgSection({ value, onChange }: { value: string; onChange: (v: string) =
         <>
           {/* Two color pickers + swap */}
           <div className="flex items-center gap-2">
-            <label className="relative flex-1 h-8 cursor-pointer group">
+            <label className="relative flex-1 h-9 cursor-pointer group">
               <div
-                className="absolute inset-0 rounded-xl border border-border shadow-sm group-hover:scale-[1.04] transition-transform"
+                className="absolute inset-0 rounded-xl border border-black/10 shadow-sm group-hover:scale-[1.04] transition-transform"
                 style={{ background: c1 }}
               />
               <input
-                type="color" value={c1}
+                type="color"
+                value={c1}
                 onChange={(e) => { setC1(e.target.value); fireGrad(e.target.value, c2, angle, radial) }}
                 className="absolute inset-0 opacity-0 w-full h-full cursor-pointer"
               />
@@ -373,18 +369,19 @@ function BgSection({ value, onChange }: { value: string; onChange: (v: string) =
             <button
               onClick={() => { setC1(c2); setC2(c1); fireGrad(c2, c1, angle, radial) }}
               title="Swap colors"
-              className="flex-shrink-0 size-7 flex items-center justify-center rounded-lg text-muted-foreground/40 hover:text-muted-foreground hover:bg-muted transition-all text-[15px] leading-none"
+              className="flex-shrink-0 w-7 h-7 flex items-center justify-center rounded-lg text-black/30 hover:text-black/60 hover:bg-black/[0.05] transition-all text-[15px] leading-none"
             >
               ⇄
             </button>
 
-            <label className="relative flex-1 h-8 cursor-pointer group">
+            <label className="relative flex-1 h-9 cursor-pointer group">
               <div
-                className="absolute inset-0 rounded-xl border border-border shadow-sm group-hover:scale-[1.04] transition-transform"
+                className="absolute inset-0 rounded-xl border border-black/10 shadow-sm group-hover:scale-[1.04] transition-transform"
                 style={{ background: c2 }}
               />
               <input
-                type="color" value={c2}
+                type="color"
+                value={c2}
                 onChange={(e) => { setC2(e.target.value); fireGrad(c1, e.target.value, angle, radial) }}
                 className="absolute inset-0 opacity-0 w-full h-full cursor-pointer"
               />
@@ -393,45 +390,76 @@ function BgSection({ value, onChange }: { value: string; onChange: (v: string) =
 
           {/* Preview strip */}
           <div
-            className="h-4 w-full rounded-xl border border-border/50"
+            className="h-[18px] w-full rounded-lg border border-black/8"
             style={{ background: buildGradValue(c1, c2, angle, radial) }}
           />
 
           {/* Direction buttons */}
-          <ToggleGroup
-            type="single"
-            value={radial ? 'r' : String(angle)}
-            onValueChange={(v) => {
-              if (!v) return
-              if (v === 'r') {
-                setAngle(0); setRadial(true); fireGrad(c1, c2, 0, true)
-              } else {
-                const a = parseInt(v)
-                setAngle(a); setRadial(false); fireGrad(c1, c2, a, false)
-              }
-            }}
-            variant="outline"
-            spacing={0}
-            className="w-full"
-            size="sm"
-          >
-            {GRAD_DIRS.map((d) => (
-              <ToggleGroupItem
-                key={d.radial ? 'r' : d.angle}
-                value={d.radial ? 'r' : String(d.angle)}
-                className="flex-1 text-sm data-[state=on]:bg-background data-[state=on]:shadow-sm"
-              >
-                {d.label}
-              </ToggleGroupItem>
-            ))}
-          </ToggleGroup>
+          <div className="flex gap-1">
+            {GRAD_DIRS.map((d) => {
+              const active = d.radial ? radial : !radial && angle === d.angle
+              return (
+                <button
+                  key={d.radial ? 'r' : d.angle}
+                  onClick={() => {
+                    setAngle(d.angle); setRadial(d.radial)
+                    fireGrad(c1, c2, d.angle, d.radial)
+                  }}
+                  className={cn(
+                    'flex-1 py-1.5 rounded-lg border text-[13px] transition-all',
+                    active
+                      ? 'bg-[#1a1a1a] text-white border-transparent'
+                      : 'text-black/40 hover:text-black/65 border-black/10 hover:bg-black/[0.04]',
+                  )}
+                >
+                  {d.label}
+                </button>
+              )
+            })}
+          </div>
         </>
       )}
     </div>
   )
 }
 
-/* ─── Export tab ───────────────────────────────────────────────────── */
+/* ─── Pill toggle ───────────────────────────────────────────────── */
+function PillToggle<T extends string>({
+  value, options, disabled, onChange,
+}: {
+  value: T
+  options: { value: T; label: string }[]
+  disabled?: T[]
+  onChange: (v: T) => void
+}) {
+  return (
+    <div className="flex gap-0.5 p-0.5 bg-black/[0.05] rounded-xl">
+      {options.map((opt) => {
+        const isDisabled = disabled?.includes(opt.value)
+        const isActive   = value === opt.value
+        return (
+          <button
+            key={opt.value}
+            disabled={isDisabled}
+            onClick={() => !isDisabled && onChange(opt.value)}
+            className={cn(
+              'flex-1 text-[11px] font-medium py-1.5 rounded-[10px] transition-all',
+              isActive && !isDisabled
+                ? 'bg-white shadow-sm text-black/70'
+                : isDisabled
+                  ? 'text-black/20 cursor-not-allowed'
+                  : 'text-black/35 hover:text-black/55 cursor-pointer',
+            )}
+          >
+            {opt.label}
+          </button>
+        )
+      })}
+    </div>
+  )
+}
+
+/* ─── Export tab ────────────────────────────────────────────────── */
 type ExportFormat = 'png' | 'jpg' | 'svg'
 
 function ExportTab({
@@ -444,69 +472,61 @@ function ExportTab({
   const [format, setFormat] = useState<ExportFormat>('png')
   const [scale,  setScale]  = useState(2)
 
+  const isTransparent  = settings.bgColor === 'transparent'
+  const transpDisabled = isTransparent || format === 'jpg' || format === 'svg'
+
+  function handleFormat(f: ExportFormat) {
+    setFormat(f)
+  }
+
   const exportLabel =
     format === 'svg' ? 'Export SVG' :
-    format === 'jpg' ? 'Export JPG' : 'Export PNG'
+    format === 'jpg' ? 'Export JPG' :
+                       `Export PNG`
 
   return (
-    <>
-      <Section title="Background" icon={<Layers />}>
+    <div className="flex flex-col h-full">
+      {/* Background */}
+      <Section title="Background" icon={<Layers className="w-3.5 h-3.5" />}>
         <BgSection value={settings.bgColor} onChange={(v) => onChange({ bgColor: v })} />
       </Section>
 
       <Separator />
 
-      <Section title="Format" icon={<Download />}>
+      {/* Format */}
+      <Section title="Format" icon={<Download className="w-3.5 h-3.5" />}>
         <div className="space-y-4">
-          {/* File type */}
           <div>
-            <p className="text-[10px] font-semibold text-muted-foreground/45 uppercase tracking-[0.1em] mb-2">
-              File type
-            </p>
-            <ToggleGroup
-              type="single"
+            <p className="text-[10px] font-medium text-black/35 uppercase tracking-wider mb-2">File type</p>
+            <PillToggle
               value={format}
-              onValueChange={(v) => v && setFormat(v as ExportFormat)}
-              variant="outline"
-              spacing={0}
-              className="w-full"
-              size="sm"
-            >
-              <ToggleGroupItem value="png" className="flex-1 text-xs data-[state=on]:bg-background data-[state=on]:shadow-sm">PNG</ToggleGroupItem>
-              <ToggleGroupItem value="jpg" className="flex-1 text-xs data-[state=on]:bg-background data-[state=on]:shadow-sm">JPG</ToggleGroupItem>
-              <ToggleGroupItem value="svg" className="flex-1 text-xs data-[state=on]:bg-background data-[state=on]:shadow-sm">SVG</ToggleGroupItem>
-            </ToggleGroup>
+              options={[
+                { value: 'png', label: 'PNG' },
+                { value: 'jpg', label: 'JPG' },
+                { value: 'svg', label: 'SVG' },
+              ]}
+              onChange={handleFormat}
+            />
             {(format === 'jpg' || format === 'svg') && (
-              <p className="text-[10px] text-muted-foreground/35 mt-1.5">
+              <p className="text-[10px] text-black/30 mt-1.5">
                 {format === 'svg' ? 'SVG' : 'JPG'} does not support transparency.
               </p>
             )}
           </div>
 
-          {/* Resolution */}
           <div>
-            <p className="text-[10px] font-semibold text-muted-foreground/45 uppercase tracking-[0.1em] mb-2">
-              Resolution
-            </p>
-            <ToggleGroup
-              type="single"
-              value={String(scale)}
-              onValueChange={(v) => v && setScale(Number(v))}
-              variant="outline"
-              spacing={0}
-              className="w-full"
-              size="sm"
-            >
-              {(['1', '2', '3', '4'] as const).map((s) => (
-                <ToggleGroupItem
-                  key={s} value={s}
-                  className="flex-1 text-xs data-[state=on]:bg-background data-[state=on]:shadow-sm"
-                >
-                  ×{s}
-                </ToggleGroupItem>
-              ))}
-            </ToggleGroup>
-            <p className="text-[10px] text-muted-foreground/35 mt-1.5">
+            <p className="text-[10px] font-medium text-black/35 uppercase tracking-wider mb-2">Resolution</p>
+            <PillToggle
+              value={String(scale) as '1' | '2' | '3' | '4'}
+              options={[
+                { value: '1', label: '×1' },
+                { value: '2', label: '×2' },
+                { value: '3', label: '×3' },
+                { value: '4', label: '×4' },
+              ]}
+              onChange={(v) => setScale(Number(v))}
+            />
+            <p className="text-[10px] text-black/30 mt-1.5">
               ×{scale} = {scale === 1 ? 'screen size' : `${scale}× screen size`}
             </p>
           </div>
@@ -516,82 +536,90 @@ function ExportTab({
       <Separator />
 
       {/* Export button */}
-      <div className="px-4 py-5">
-        <Button className="w-full gap-2" onClick={() => onExport({ format, scale })}>
-          <Download className="size-3.5" />
+      <div className="px-5 py-5">
+        <button
+          onClick={() => onExport({ format, scale })}
+          className="w-full flex items-center justify-center gap-2 bg-[#1a1a1a] hover:bg-[#2d2d2d] text-white text-[13px] font-medium py-2.5 rounded-xl transition-all active:scale-[0.98]"
+        >
+          <Download className="w-3.5 h-3.5" />
           {exportLabel}
-        </Button>
+        </button>
       </div>
-    </>
+    </div>
   )
 }
 
-/* ─── ControlPanel ─────────────────────────────────────────────────── */
+/* ─── ControlPanel ──────────────────────────────────────────────── */
 interface ControlPanelProps {
-  settings:     CardSettings
-  displayCount: 1 | 2 | 3
-  onChange:     (patch: Partial<CardSettings>) => void
-  onReset:      () => void
-  onRandomize:  () => void
-  onExport:     (opts: { format: 'png' | 'jpg' | 'svg'; scale: number }) => void
+  settings:      CardSettings
+  displayCount:  1 | 2 | 3
+  onChange:      (patch: Partial<CardSettings>) => void
+  onReset:       () => void
+  onRandomize:   () => void
+  onExport:      (opts: { format: 'png' | 'jpg' | 'svg'; scale: number }) => void
 }
 
-export function ControlPanel({
-  settings, displayCount, onChange, onReset, onRandomize, onExport,
-}: ControlPanelProps) {
+export function ControlPanel({ settings, displayCount, onChange, onReset, onRandomize, onExport }: ControlPanelProps) {
   const [tab, setTab] = useState<'create' | 'export'>('create')
 
   return (
-    <aside className="flex flex-col w-[278px] min-w-[278px] h-screen bg-background border-l border-border shadow-[-8px_0_24px_-8px_rgba(0,0,0,0.06)]">
-      <Tabs
-        value={tab}
-        onValueChange={(v) => setTab(v as 'create' | 'export')}
-        className="flex flex-col h-full gap-0"
-      >
-        {/* ── Sticky tab header ── */}
-        <div className="shrink-0 px-3 py-2.5 border-b border-border">
-          <TabsList className="w-full">
-            <TabsTrigger value="create" className="flex-1 text-xs">Create</TabsTrigger>
-            <TabsTrigger value="export" className="flex-1 text-xs">Export</TabsTrigger>
-          </TabsList>
-        </div>
+    <aside className="flex flex-col w-[278px] min-w-[278px] h-screen bg-white border-l border-black/[0.07] overflow-y-auto shadow-[-8px_0_24px_-8px_rgba(0,0,0,0.06)]">
 
-        {/* ── Create tab ── */}
-        <TabsContent value="create" className="flex-1 overflow-y-auto m-0 min-h-0">
-          {/* Import */}
-          <Section title="Import" icon={<CreditCard />}>
+      {/* ── Tabs ── */}
+      <div className="p-2 border-b border-black/[0.07] sticky top-0 bg-white z-10">
+        <div className="flex gap-0.5 p-0.5 bg-black/[0.05] rounded-xl">
+          <button
+            onClick={() => setTab('create')}
+            className={cn(
+              'flex-1 text-[12px] font-medium py-1.5 rounded-[10px] transition-all',
+              tab === 'create'
+                ? 'bg-white shadow-sm text-black/70'
+                : 'text-black/35 hover:text-black/55',
+            )}
+          >
+            Create
+          </button>
+          <button
+            onClick={() => setTab('export')}
+            className={cn(
+              'flex-1 text-[12px] font-medium py-1.5 rounded-[10px] transition-all',
+              tab === 'export'
+                ? 'bg-white shadow-sm text-black/70'
+                : 'text-black/35 hover:text-black/55',
+            )}
+          >
+            Export
+          </button>
+        </div>
+      </div>
+
+      {/* ── Create tab ── */}
+      {tab === 'create' && (
+        <>
+          <Section title="Import" icon={<CreditCard className="w-3.5 h-3.5" />}>
             <div className="grid grid-cols-2 gap-2.5">
               <div>
-                <p className="text-[11px] text-muted-foreground/55 mb-1.5 font-medium">Front</p>
-                <DropZone
-                  label="Front face"
-                  image={settings.frontImage}
-                  onLoad={(url) => onChange({ frontImage: url })}
-                />
+                <p className="text-[11px] text-black/35 mb-1.5 font-medium">Front</p>
+                <DropZone label="Front face" image={settings.frontImage} onLoad={(url) => onChange({ frontImage: url })} />
               </div>
               <div>
-                <p className="text-[11px] text-muted-foreground/55 mb-1.5 font-medium">Back</p>
-                <DropZone
-                  label="Back face"
-                  image={settings.backImage}
-                  onLoad={(url) => onChange({ backImage: url })}
-                />
+                <p className="text-[11px] text-black/35 mb-1.5 font-medium">Back</p>
+                <DropZone label="Back face" image={settings.backImage} onLoad={(url) => onChange({ backImage: url })} />
               </div>
             </div>
           </Section>
 
           <Separator />
 
-          {/* Edge */}
-          <Section title="Edge" icon={<Pipette />}>
+          <Section title="Edge" icon={<Pipette className="w-3.5 h-3.5" />}>
             <label className="relative flex items-center gap-3 cursor-pointer group">
               <div
-                className="size-9 rounded-xl border border-border shadow-sm flex-shrink-0 transition-transform group-hover:scale-105 group-active:scale-95"
+                className="w-10 h-10 rounded-xl border border-black/10 shadow-sm flex-shrink-0 transition-transform group-hover:scale-105 group-active:scale-95"
                 style={{ backgroundColor: settings.edgeColor }}
               />
               <div className="flex-1 min-w-0">
-                <p className="text-xs font-medium text-foreground/75">Edge color</p>
-                <p className="text-[11px] font-mono text-muted-foreground/60 uppercase tracking-wider mt-0.5">
+                <p className="text-[12px] font-medium text-black/65">Edge color</p>
+                <p className="text-[11px] font-mono text-black/35 uppercase tracking-wider mt-0.5">
                   {settings.edgeColor}
                 </p>
               </div>
@@ -606,25 +634,19 @@ export function ControlPanel({
 
           <Separator />
 
-          {/* Rotation */}
-          <Section title="Rotation" icon={<RotateCcw />}>
-            <SliderRow label="X" value={settings.rotX} min={-90}  max={90}  onChange={(v) => onChange({ rotX: v })} />
-            <SliderRow label="Y" value={settings.rotY} min={-180} max={180} onChange={(v) => onChange({ rotY: v })} />
-            <SliderRow label="Z" value={settings.rotZ} min={-45}  max={45}  onChange={(v) => onChange({ rotZ: v })} />
-            <SliderRow
-              label="Zoom" value={settings.zoom} min={0.6} max={2.2} step={0.02} unit="×"
-              onChange={(v) => onChange({ zoom: v })}
-            />
+          <Section title="Rotation" icon={<RotateCcw className="w-3.5 h-3.5" />}>
+            <SliderRow label="Rotation X" value={settings.rotX} min={-90} max={90} onChange={(v) => onChange({ rotX: v })} />
+            <SliderRow label="Rotation Y" value={settings.rotY} min={-180} max={180} onChange={(v) => onChange({ rotY: v })} />
+            <SliderRow label="Rotation Z" value={settings.rotZ} min={-45} max={45} onChange={(v) => onChange({ rotZ: v })} />
+            <SliderRow label="Zoom" value={settings.zoom} min={0.6} max={2.2} step={0.02} unit="×" onChange={(v) => onChange({ zoom: v })} />
 
-            {/* Auto-rotate toggle */}
-            <div className="flex items-center justify-between pt-0.5">
+            <div className="flex items-center justify-between pt-1">
               <div className="flex items-center gap-2">
-                <span className="text-muted-foreground/40">
-                  {settings.autoRotate
-                    ? <Pause className="size-3.5" />
-                    : <Play  className="size-3.5" />}
-                </span>
-                <span className="text-xs text-muted-foreground font-medium">Auto-rotate</span>
+                {settings.autoRotate
+                  ? <Pause className="w-3.5 h-3.5 text-black/35" />
+                  : <Play  className="w-3.5 h-3.5 text-black/35" />
+                }
+                <span className="text-[12px] text-black/60 font-medium">Auto-rotate</span>
               </div>
               <Switch
                 checked={settings.autoRotate}
@@ -635,84 +657,83 @@ export function ControlPanel({
 
           <Separator />
 
-          {/* Position */}
-          <Section title="Position" icon={<Move />}>
-            <SliderRow label="X" value={settings.posX ?? 0} min={-5} max={5} step={0.05} format={fmtPos} onChange={(v) => onChange({ posX: v })} />
-            <SliderRow label="Y" value={settings.posY ?? 0} min={-3} max={3} step={0.05} format={fmtPos} onChange={(v) => onChange({ posY: v })} />
-            <SliderRow label="Z" value={settings.posZ ?? 0} min={-2} max={2} step={0.05} format={fmtPos} onChange={(v) => onChange({ posZ: v })} />
-            <p className="text-[10px] text-muted-foreground/35">
-              ⌥ Alt + drag on canvas to move in XY
-            </p>
+          <Section title="Position" icon={<Move className="w-3.5 h-3.5" />}>
+            <SliderRow label="Position X" value={settings.posX ?? 0} min={-5} max={5} step={0.05} format={fmtPos} onChange={(v) => onChange({ posX: v })} />
+            <SliderRow label="Position Y" value={settings.posY ?? 0} min={-3} max={3} step={0.05} format={fmtPos} onChange={(v) => onChange({ posY: v })} />
+            <SliderRow label="Position Z" value={settings.posZ ?? 0} min={-2} max={2} step={0.05} format={fmtPos} onChange={(v) => onChange({ posZ: v })} />
+            <p className="text-[10px] text-black/25 pt-0.5">⌥ Alt + drag on canvas to move in XY</p>
           </Section>
 
           <Separator />
 
-          {/* Quick views */}
-          <Section title="Quick views" icon={<Eye />}>
+          <Section title="Quick views" icon={<Eye className="w-3.5 h-3.5" />}>
             <div className="grid grid-cols-3 gap-2">
               {VIEW_PRESETS.map(({ id, label, icon: Icon, rotX, rotY, rotZ }) => (
-                <Button
+                <button
                   key={id}
-                  variant="outline"
                   onClick={() => onChange({ rotX, rotY, rotZ, autoRotate: false })}
-                  className="flex flex-col items-center h-auto py-2.5 px-1 gap-1.5 text-muted-foreground hover:text-foreground rounded-2xl"
+                  className={cn(
+                    'flex flex-col items-center gap-1.5 py-2.5 px-1 rounded-xl border border-black/10',
+                    'bg-black/[0.03] hover:bg-black/[0.07] hover:border-black/20',
+                    'text-black/40 hover:text-black/60 transition-all active:scale-95'
+                  )}
                 >
                   <Icon />
-                  <span className="text-[10px] font-medium leading-none normal-case">{label}</span>
-                </Button>
+                  <span className="text-[10px] font-medium leading-none">{label}</span>
+                </button>
               ))}
             </div>
 
-            <Button
-              variant="outline"
+            {/* Randomize button */}
+            <button
               onClick={onRandomize}
-              className="w-full text-xs text-muted-foreground hover:text-foreground gap-2 rounded-2xl"
+              className={cn(
+                'w-full flex items-center justify-center gap-2 rounded-xl border border-black/10',
+                'bg-black/[0.03] hover:bg-black/[0.07] hover:border-black/20',
+                'text-black/40 hover:text-black/60 transition-all active:scale-[0.98]',
+                'text-[11px] font-medium py-2.5',
+              )}
             >
-              <Shuffle className="size-3.5" />
+              <Shuffle className="w-3.5 h-3.5" />
               {displayCount === 1 ? 'Randomize' : `Randomize ${displayCount} cards`}
-            </Button>
+            </button>
           </Section>
 
           <Separator />
 
-          {/* Lighting */}
-          <Section title="Lighting" icon={<Sun />}>
-            <SliderRow
-              label="Intensity"
-              value={settings.lightIntensity}
-              min={0} max={2} step={0.05} unit="×"
-              onChange={(v) => onChange({ lightIntensity: v })}
-            />
+          <Section title="Lighting" icon={<Sun className="w-3.5 h-3.5" />}>
+            <SliderRow label="Intensity" value={settings.lightIntensity} min={0} max={2} step={0.05} unit="×" onChange={(v) => onChange({ lightIntensity: v })} />
           </Section>
 
           <Separator />
 
-          {/* Reset */}
-          <Section title="Reset" icon={<RefreshCcw />}>
-            <Button
-              variant="outline"
+          <Section title="Reset" icon={<RefreshCcw className="w-3.5 h-3.5" />}>
+            <button
               onClick={onReset}
-              className="w-full text-xs text-muted-foreground hover:text-foreground gap-2 rounded-2xl"
+              className={cn(
+                'w-full flex items-center justify-center gap-2 rounded-xl border border-black/10 bg-black/[0.03]',
+                'hover:bg-black/[0.06] hover:border-black/15 transition-all text-black/50 hover:text-black/70',
+                'text-[12px] font-medium py-2.5'
+              )}
             >
-              <RefreshCcw className="size-3.5" />
+              <RefreshCcw className="w-3.5 h-3.5" />
               Default view
-            </Button>
+            </button>
           </Section>
 
-          {/* Footer */}
-          <div className="h-10" />
-          <div className="px-4 pb-5 pt-2">
-            <p className="text-[10px] text-muted-foreground/25 text-center tracking-widest uppercase">
-              CardistryStudio · 3D
+          <div className="flex-1 min-h-[40px]" />
+          <div className="px-5 pb-5 pt-2">
+            <p className="text-[10px] text-black/20 text-center tracking-wide">
+              CardistryStudio · 3D Card Viewer
             </p>
           </div>
-        </TabsContent>
+        </>
+      )}
 
-        {/* ── Export tab ── */}
-        <TabsContent value="export" className="flex-1 overflow-y-auto m-0 min-h-0">
-          <ExportTab settings={settings} onChange={onChange} onExport={onExport} />
-        </TabsContent>
-      </Tabs>
+      {/* ── Export tab ── */}
+      {tab === 'export' && (
+        <ExportTab settings={settings} onChange={onChange} onExport={onExport} />
+      )}
     </aside>
   )
 }
