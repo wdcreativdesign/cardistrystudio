@@ -6,7 +6,7 @@ import { ControlPanel } from './components/ControlPanel'
 import { BottomBar } from './components/BottomBar'
 import { Header } from './components/Header'
 import { LeftPanel } from './components/LeftPanel'
-import { type CardSettings, type CardPage, type Workspace, type Orientation } from './types'
+import { type CardSettings, type CardPage, type Workspace, type Orientation, type SavedPose } from './types'
 import { contrastColor } from './lib/utils'
 import { randomizePoses } from './lib/randomize'
 
@@ -97,6 +97,22 @@ export default function App() {
       ),
     }))
   }, [patchWs])
+
+  /* ── Saved poses (persisted in localStorage) ── */
+  const [savedPoses, setSavedPoses] = useState<SavedPose[]>(() => {
+    try { return JSON.parse(localStorage.getItem('cs-saved-poses') ?? '[]') } catch { return [] }
+  })
+  useEffect(() => {
+    localStorage.setItem('cs-saved-poses', JSON.stringify(savedPoses))
+  }, [savedPoses])
+
+  const handleSavePose   = useCallback((pose: SavedPose) => setSavedPoses((p) => [...p, pose]), [])
+  const handleDeletePose = useCallback((id: string) => setSavedPoses((p) => p.filter((x) => x.id !== id)), [])
+  const handleRenamePose = useCallback((id: string, name: string) =>
+    setSavedPoses((p) => p.map((x) => x.id === id ? { ...x, name } : x)), [])
+  const handleApplyPose  = useCallback((pose: SavedPose) => {
+    update({ rotX: pose.rotX, rotY: pose.rotY, rotZ: pose.rotZ, zoom: pose.zoom, posX: pose.posX, posY: pose.posY, posZ: pose.posZ, autoRotate: pose.autoRotate })
+  }, [update])
 
   /* ── Alt key tracking ── */
   useEffect(() => {
@@ -440,6 +456,12 @@ export default function App() {
           onRestart={handleRestart}
           onLogoClick={handleLogoClick}
           logoColor={contrastColor(settings.bgColor)}
+          savedPoses={savedPoses}
+          currentSettings={settings}
+          onSavePose={handleSavePose}
+          onApplyPose={handleApplyPose}
+          onDeletePose={handleDeletePose}
+          onRenamePose={handleRenamePose}
         />
 
         <div

@@ -1,15 +1,37 @@
-import { RotateCcw, LogOut } from 'lucide-react'
+import { useRef, useState } from 'react'
+import { RotateCcw, LogOut, Bookmark } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { FeedbackButton } from './FeedbackButton'
+import { PosesPanel } from './PosesPanel'
 import { cn } from '@/lib/utils'
+import { type SavedPose, type CardSettings } from '@/types'
 
 interface HeaderProps {
-  onRestart:    () => void
-  onLogoClick?: () => void
-  logoColor?:   '#1a1a1a' | '#ffffff'
+  onRestart:       () => void
+  onLogoClick?:    () => void
+  logoColor?:      '#1a1a1a' | '#ffffff'
+  savedPoses:      SavedPose[]
+  currentSettings: CardSettings
+  onSavePose:      (pose: SavedPose) => void
+  onApplyPose:     (pose: SavedPose) => void
+  onDeletePose:    (id: string) => void
+  onRenamePose:    (id: string, name: string) => void
 }
 
-export function Header({ onRestart, onLogoClick, logoColor = '#1a1a1a' }: HeaderProps) {
+export function Header({
+  onRestart,
+  onLogoClick,
+  logoColor = '#1a1a1a',
+  savedPoses,
+  currentSettings,
+  onSavePose,
+  onApplyPose,
+  onDeletePose,
+  onRenamePose,
+}: HeaderProps) {
+  const [posesOpen, setPosesOpen] = useState(false)
+  const posesButtonRef = useRef<HTMLButtonElement>(null)
+
   async function handleSignOut() {
     await supabase.auth.signOut()
   }
@@ -21,6 +43,7 @@ export function Header({ onRestart, onLogoClick, logoColor = '#1a1a1a' }: Header
 
   return (
     <header className="absolute top-0 left-0 right-0 z-20 flex items-center justify-between px-6 py-4 pointer-events-none">
+
       {/* Logo */}
       <div className="flex items-center pointer-events-auto">
         <button
@@ -39,6 +62,38 @@ export function Header({ onRestart, onLogoClick, logoColor = '#1a1a1a' }: Header
       <div className="pointer-events-auto flex items-center gap-2">
         {/* Feedback */}
         <FeedbackButton logoColor={logoColor} />
+
+        {/* Saved poses */}
+        <div className="relative">
+          <button
+            ref={posesButtonRef}
+            onClick={() => setPosesOpen((o) => !o)}
+            title="Saved poses"
+            className={cn(
+              'flex items-center justify-center w-9 h-9 rounded-xl border shadow-sm backdrop-blur-sm transition-all active:scale-[0.97]',
+              posesOpen
+                ? dark
+                  ? 'border-black/20 bg-black/[0.07] text-black/70'
+                  : 'border-white/35 bg-white/30 text-white'
+                : btnClass,
+            )}
+          >
+            <Bookmark className="w-3.5 h-3.5" />
+          </button>
+
+          {posesOpen && (
+            <PosesPanel
+              savedPoses={savedPoses}
+              currentSettings={currentSettings}
+              onSave={onSavePose}
+              onApply={onApplyPose}
+              onDelete={onDeletePose}
+              onRename={onRenamePose}
+              onClose={() => setPosesOpen(false)}
+              anchorRef={posesButtonRef}
+            />
+          )}
+        </div>
 
         {/* Sign out */}
         <button

@@ -33,6 +33,19 @@ export interface Workspace {
   activePageId: string
 }
 
+export interface SavedPose {
+  id:         string
+  name:       string
+  rotX:       number
+  rotY:       number
+  rotZ:       number
+  zoom:       number
+  posX:       number
+  posY:       number
+  posZ:       number
+  autoRotate: boolean
+}
+
 export interface FinishConfig {
   label: string
   metalness: number
