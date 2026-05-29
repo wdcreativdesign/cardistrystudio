@@ -70,12 +70,12 @@ export function BuyCreditsModal({ currentBalance, onClose }: BuyCreditsModalProp
         {/* Header */}
         <div className="flex items-start justify-between px-6 pt-6 pb-5">
           <div>
-            <h2 className="text-[15px] font-semibold text-black/85">Acheter des crédits</h2>
+            <h2 className="text-[15px] font-semibold text-black/85">Buy credits</h2>
             <p className="text-[12px] text-black/40 mt-1">
-              Solde actuel ·{' '}
-              <span className="font-semibold text-black/60">{currentBalance} crédit{currentBalance !== 1 ? 's' : ''}</span>
+              Current balance ·{' '}
+              <span className="font-semibold text-black/60">{currentBalance} credit{currentBalance !== 1 ? 's' : ''}</span>
               {currentBalance < EXPORT_COST && (
-                <span className="text-red-400 ml-1.5">· il en faut {EXPORT_COST} pour exporter</span>
+                <span className="text-red-400 ml-1.5">· {EXPORT_COST} needed to export</span>
               )}
             </p>
           </div>
@@ -99,9 +99,7 @@ export function BuyCreditsModal({ currentBalance, onClose }: BuyCreditsModalProp
                 className={cn(
                   'w-full flex items-center justify-between px-4 py-3.5 rounded-xl border transition-all text-left',
                   'hover:bg-black/[0.025] active:scale-[0.99]',
-                  pack.popular
-                    ? 'border-black/20 bg-black/[0.02]'
-                    : 'border-black/[0.08] bg-transparent',
+                  'border-black/[0.08] bg-transparent',
                   !!loading && !isLoading && 'opacity-50',
                 )}
               >
@@ -115,14 +113,13 @@ export function BuyCreditsModal({ currentBalance, onClose }: BuyCreditsModalProp
                   <div>
                     <div className="flex items-center gap-2">
                       <span className="text-[13px] font-semibold text-black/80">{pack.name}</span>
-                      <span className="text-[11px] text-black/45 font-medium">{pack.credits} crédits</span>
                       {pack.popular && (
-                        <span className="text-[9px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-md bg-black/[0.06] text-black/40">
-                          Populaire
+                        <span className="text-[9px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-md bg-amber-100 text-amber-500">
+                          Popular
                         </span>
                       )}
                     </div>
-                    <p className="text-[11px] text-black/30 mt-0.5">{pack.perExport} par export</p>
+                    <p className="text-[11px] text-black/30 mt-0.5">{pack.credits} credits</p>
                   </div>
                 </div>
                 <span className="text-[14px] font-semibold text-black/75 flex-shrink-0">{pack.price}</span>
@@ -134,7 +131,7 @@ export function BuyCreditsModal({ currentBalance, onClose }: BuyCreditsModalProp
         {/* Footer */}
         <div className="px-6 pb-5 pt-0">
           <p className="text-[10px] text-black/25 text-center">
-            Paiement sécurisé par Stripe · 1 export = {EXPORT_COST} crédits
+            Secured by Stripe · 1 export = {EXPORT_COST} credits
           </p>
         </div>
       </div>

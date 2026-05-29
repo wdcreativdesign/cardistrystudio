@@ -60,7 +60,7 @@ export function Header({
         {credits !== null && credits !== undefined && (
           <button
             onClick={onBuyCredits}
-            title="Acheter des crédits"
+            title="Buy credits"
             className={cn(
               'flex items-center gap-1.5 px-3 h-9 rounded-xl border shadow-sm backdrop-blur-sm transition-all active:scale-[0.97] text-[12px] font-medium',
               btnClass,
