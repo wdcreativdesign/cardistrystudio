@@ -13,6 +13,7 @@ import { contrastColor } from './lib/utils'
 import { randomizePoses } from './lib/randomize'
 import { supabase } from './lib/supabase'
 import { useCredits, EXPORT_COST } from './hooks/useCredits'
+import { trackExport, trackOpenBuyCredits, trackPurchase, trackSignOut } from './lib/analytics'
 
 /* ── Default card settings ───────────────────────────────────────── */
 const DEFAULT_SETTINGS: CardSettings = {
@@ -140,6 +141,7 @@ export default function App() {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
     if (params.get('credits') === 'ok') {
+      trackPurchase('unknown', 0)   // pack details not available on return
       setCreditSuccess(true)
       window.history.replaceState({}, '', window.location.pathname)
       setTimeout(() => setCreditSuccess(false), 4000)
@@ -463,6 +465,7 @@ export default function App() {
     gl.render(scene, camera)
 
     const ext  = isTransparent ? 'png' : opts.format
+    trackExport(ext, opts.scale)
     const link = document.createElement('a')
     link.download = `cardistrystudio-export@${opts.scale}x.${ext}`
     link.href = dataURL; link.click()
@@ -480,6 +483,7 @@ export default function App() {
     if (creditsLoading) return
 
     if ((credits ?? 0) < EXPORT_COST) {
+      trackOpenBuyCredits()
       setShowBuyCredits(true)
       return
     }

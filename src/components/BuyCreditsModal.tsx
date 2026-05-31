@@ -3,6 +3,7 @@ import { X, Zap, Loader2, Infinity } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { cn } from '@/lib/utils'
 import { EXPORT_COST } from '@/hooks/useCredits'
+import { trackBeginCheckout } from '@/lib/analytics'
 
 const PACKS = [
   {
@@ -54,6 +55,11 @@ export function BuyCreditsModal({ currentBalance, onClose }: BuyCreditsModalProp
   async function handleBuy(priceId: string, packId: string) {
     setLoading(packId)
     try {
+      const pack = PACKS.find((p) => p.id === packId)
+      if (pack) {
+        const priceNum = parseFloat(pack.price.replace(',', '.'))
+        trackBeginCheckout(pack.name, Math.round(priceNum * 100))
+      }
       const { data, error } = await supabase.functions.invoke('create-checkout-session', {
         body: { priceId },
       })
