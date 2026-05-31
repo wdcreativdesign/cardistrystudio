@@ -43,7 +43,7 @@ function Section({ title, icon, children, defaultOpen = true }: {
         'grid transition-all duration-200 ease-in-out',
         open ? 'grid-rows-[1fr] mt-4' : 'grid-rows-[0fr]',
       )}>
-        <div className="overflow-hidden">
+        <div className="overflow-hidden -mx-2 px-2">
           <div className="space-y-5">{children}</div>
         </div>
       </div>
