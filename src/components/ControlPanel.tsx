@@ -1,6 +1,6 @@
 import { useRef, useCallback, useState, useEffect } from 'react'
 import {
-  ImageUp, RotateCcw, Play, Pause, Sun, RefreshCcw, CreditCard, Pipette, Eye, Layers, Download, Move, ChevronDown, Shuffle, Zap,
+  ImageUp, RotateCcw, Play, Pause, Sun, RefreshCcw, CreditCard, Pipette, Eye, Layers, Download, Move, ChevronDown, Shuffle, Zap, Loader2,
 } from 'lucide-react'
 import { Slider } from '@/components/ui/slider'
 import { Label } from '@/components/ui/label'
@@ -459,27 +459,94 @@ function PillToggle<T extends string>({
 /* ─── Export tab ────────────────────────────────────────────────── */
 type ExportFormat = 'png' | 'jpg'
 
+type CaptureResult = { dataUrl: string; cssW: number; cssH: number }
+
 function ExportTab({
-  settings, onChange, onExport,
+  settings, onChange, onExport, onCapturePreview,
 }: {
-  settings: CardSettings
-  onChange: (p: Partial<CardSettings>) => void
-  onExport: (opts: { format: ExportFormat; scale: number }) => void
+  settings:         CardSettings
+  onChange:         (p: Partial<CardSettings>) => void
+  onExport:         (opts: { format: ExportFormat; scale: number }) => void
+  onCapturePreview: () => CaptureResult | null
 }) {
-  const [format, setFormat] = useState<ExportFormat>('png')
-  const [scale,  setScale]  = useState(2)
+  const [format,     setFormat]     = useState<ExportFormat>('png')
+  const [scale,      setScale]      = useState(2)
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null)
+  const [cssSize,    setCssSize]    = useState<{ w: number; h: number } | null>(null)
 
-  const isTransparent  = settings.bgColor === 'transparent'
-  const transpDisabled = isTransparent || format === 'jpg'
+  /* Stable ref so effects never go stale */
+  const captureRef = useRef(onCapturePreview)
+  useEffect(() => { captureRef.current = onCapturePreview }, [onCapturePreview])
 
-  function handleFormat(f: ExportFormat) {
-    setFormat(f)
+  function runCapture() {
+    const result = captureRef.current()
+    if (result) {
+      setPreviewUrl(result.dataUrl)
+      setCssSize({ w: result.cssW, h: result.cssH })
+    }
   }
 
+  /* Initial capture when tab mounts */
+  useEffect(() => {
+    const t = setTimeout(runCapture, 80)
+    return () => clearTimeout(t)
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  /* Re-capture when background changes (scene needs ~2 frames to update) */
+  useEffect(() => {
+    const t = setTimeout(runCapture, 350)
+    return () => clearTimeout(t)
+  }, [settings.bgColor]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  const isTransparent = settings.bgColor === 'transparent'
+  const exportW = cssSize ? Math.round(cssSize.w * scale) : null
+  const exportH = cssSize ? Math.round(cssSize.h * scale) : null
   const exportLabel = format === 'jpg' ? 'Export JPG' : 'Export PNG'
 
   return (
     <div className="flex flex-col h-full">
+
+      {/* ── Export preview thumbnail ── */}
+      <div className="px-5 pt-5 pb-1">
+        <div
+          className="relative rounded-xl overflow-hidden border border-black/[0.07]"
+          style={{
+            background: isTransparent
+              ? 'repeating-conic-gradient(#e0e0e0 0% 25%, #f5f5f5 0% 50%) 0 0 / 10px 10px'
+              : 'transparent',
+            minHeight: 72,
+          }}
+        >
+          {previewUrl ? (
+            <>
+              <img
+                src={previewUrl}
+                alt="Export preview"
+                className="w-full object-contain block"
+                style={{ maxHeight: 148, display: 'block' }}
+              />
+              {/* Refresh button */}
+              <button
+                onClick={runCapture}
+                title="Refresh preview"
+                className="absolute top-2 right-2 w-6 h-6 flex items-center justify-center rounded-lg bg-black/25 hover:bg-black/40 text-white/80 hover:text-white transition-all backdrop-blur-sm active:scale-90"
+              >
+                <RefreshCcw className="w-3 h-3" />
+              </button>
+            </>
+          ) : (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="w-4 h-4 text-black/20 animate-spin" />
+            </div>
+          )}
+        </div>
+        {exportW != null && exportH != null && (
+          <p className="text-[10px] text-black/30 text-center mt-2 tabular-nums">
+            {exportW.toLocaleString()} × {exportH.toLocaleString()} px · ×{scale}
+          </p>
+        )}
+      </div>
+
       {/* Background */}
       <Section title="Background" icon={<Layers className="w-3.5 h-3.5" />}>
         <BgSection value={settings.bgColor} onChange={(v) => onChange({ bgColor: v })} />
@@ -498,7 +565,7 @@ function ExportTab({
                 { value: 'png', label: 'PNG' },
                 { value: 'jpg', label: 'JPG' },
               ]}
-              onChange={handleFormat}
+              onChange={setFormat}
             />
             {format === 'jpg' && (
               <p className="text-[10px] text-black/30 mt-1.5">
@@ -547,15 +614,16 @@ function ExportTab({
 
 /* ─── ControlPanel ──────────────────────────────────────────────── */
 interface ControlPanelProps {
-  settings:      CardSettings
-  displayCount:  1 | 2 | 3
-  onChange:      (patch: Partial<CardSettings>) => void
-  onReset:       () => void
-  onRandomize:   () => void
-  onExport:      (opts: { format: 'png' | 'jpg'; scale: number }) => void
+  settings:         CardSettings
+  displayCount:     1 | 2 | 3
+  onChange:         (patch: Partial<CardSettings>) => void
+  onReset:          () => void
+  onRandomize:      () => void
+  onExport:         (opts: { format: 'png' | 'jpg'; scale: number }) => void
+  onCapturePreview: () => CaptureResult | null
 }
 
-export function ControlPanel({ settings, displayCount, onChange, onReset, onRandomize, onExport }: ControlPanelProps) {
+export function ControlPanel({ settings, displayCount, onChange, onReset, onRandomize, onExport, onCapturePreview }: ControlPanelProps) {
   const [tab, setTab] = useState<'create' | 'export'>('create')
 
   return (
@@ -728,7 +796,7 @@ export function ControlPanel({ settings, displayCount, onChange, onReset, onRand
 
       {/* ── Export tab ── */}
       {tab === 'export' && (
-        <ExportTab settings={settings} onChange={onChange} onExport={onExport} />
+        <ExportTab settings={settings} onChange={onChange} onExport={onExport} onCapturePreview={onCapturePreview} />
       )}
     </aside>
   )

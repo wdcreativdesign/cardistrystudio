@@ -370,6 +370,40 @@ export default function App() {
     setActiveWorkspaceId(id)
   }, [])
 
+  /* ── Capture preview (used by ExportTab thumbnail) ── */
+  const capturePreview = useCallback((): { dataUrl: string; cssW: number; cssH: number } | null => {
+    const gl     = glRef.current
+    const scene  = sceneRef.current
+    const camera = cameraRef.current
+    if (!gl || !scene || !camera) return null
+
+    const isTransparent = settingsRef.current.bgColor === 'transparent'
+    const cssW = gl.domElement.clientWidth
+    const cssH = gl.domElement.clientHeight
+
+    let dataUrl: string
+
+    if (isTransparent) {
+      const bgLayers = scene.getObjectByName('bg-layers')
+      if (bgLayers) bgLayers.visible = false
+      const savedColor = new THREE.Color()
+      gl.getClearColor(savedColor)
+      const savedAlpha = gl.getClearAlpha()
+      gl.setClearColor(0x000000, 0)
+      gl.clear()
+      gl.render(scene, camera)
+      dataUrl = gl.domElement.toDataURL('image/png', 0.85)
+      gl.setClearColor(savedColor, savedAlpha)
+      if (bgLayers) bgLayers.visible = true
+      gl.render(scene, camera)
+    } else {
+      gl.render(scene, camera)
+      dataUrl = gl.domElement.toDataURL('image/png', 0.85)
+    }
+
+    return { dataUrl, cssW, cssH }
+  }, [])
+
   /* ── Export (raw WebGL, appelé après vérification crédits) ── */
   const doExport = useCallback((opts: { format: 'png' | 'jpg'; scale: number }) => {
     const gl     = glRef.current
@@ -624,6 +658,7 @@ export default function App() {
         onReset={handleReset}
         onRandomize={handleRandomize}
         onExport={handleExport}
+        onCapturePreview={capturePreview}
       />
 
       {/* ── Reload confirm dialog ── */}
