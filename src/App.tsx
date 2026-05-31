@@ -129,10 +129,10 @@ export default function App() {
   /* ── Credits ── */
   const { balance: credits, loading: creditsLoading } = useCredits(currentUser?.id)
 
-  // En dev sans user réel (dev skip), on affiche des crédits fictifs pour tester l'UI
-  const displayCredits = currentUser?.id
-    ? credits
-    : (import.meta.env.DEV ? 99 : null)
+  // En dev : crédits fictifs illimités (affiche ∞ dans le header)
+  const displayCredits = import.meta.env.DEV
+    ? 10000
+    : (currentUser?.id ? credits : null)
 
   /* ── Handle ?credits=ok return from Stripe ── */
   useEffect(() => {
@@ -418,7 +418,10 @@ export default function App() {
 
   /* ── Export avec vérification crédits ── */
   const handleExport = useCallback(async (opts: { format: 'png' | 'jpg'; scale: number }) => {
-    // No authenticated user (dev skip) — export directly without credit check
+    // Dev mode — bypass all credit logic, export freely
+    if (import.meta.env.DEV) { doExport(opts); return }
+
+    // No authenticated user — export directly without credit check
     if (!currentUser) { doExport(opts); return }
 
     // Still loading balance — don't open modal, just wait
