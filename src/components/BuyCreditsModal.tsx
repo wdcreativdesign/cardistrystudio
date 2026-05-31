@@ -128,7 +128,7 @@ export function BuyCreditsModal({ currentBalance, onClose }: BuyCreditsModalProp
                           Best value
                         </span>
                       </div>
-                      <p className="text-[11px] text-white/35 mt-0.5">10 000 credits · 0,01 € / export</p>
+                      <p className="text-[11px] text-white/35 mt-0.5">Unlimited exports</p>
                     </div>
                   </div>
                   <span className="text-[14px] font-semibold text-white/80 flex-shrink-0">{pack.price}</span>
