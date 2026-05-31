@@ -1,13 +1,13 @@
 import { useRef, useCallback, useState, useEffect } from 'react'
 import {
-  ImageUp, RotateCcw, Play, Pause, Sun, RefreshCcw, CreditCard, Pipette, Eye, Layers, Download, Move, ChevronDown, Shuffle, Zap, Loader2,
+  ImageUp, RotateCcw, Play, Pause, Sun, RefreshCcw, CreditCard, Pipette, Eye, Layers, Download, Move, ChevronDown, Shuffle, Zap, Loader2, Camera,
 } from 'lucide-react'
 import { Slider } from '@/components/ui/slider'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { Separator } from '@/components/ui/separator'
 import { cn } from '@/lib/utils'
-import { type CardSettings } from '@/types'
+import { type CardSettings, type CameraMode } from '@/types'
 
 /* ─── Helpers ──────────────────────────────────────────────────── */
 function fmt(v: number, unit = '°') {
@@ -129,6 +129,12 @@ function SliderRow({ label, value, min, max, step = 1, unit = '°', format: fmtF
 function fmtPos(v: number) {
   const r = Math.round(v * 10) / 10
   return `${r > 0 ? '+' : ''}${r.toFixed(1)}`
+}
+
+/** Convert FOV (degrees) → 35mm full-frame focal length equivalent (mm) */
+function fovToMm(fov: number): string {
+  const fl = Math.round(21.63 / Math.tan((fov / 2) * (Math.PI / 180)))
+  return `${fl}mm`
 }
 
 /* ─── Quick view icons ──────────────────────────────────────────── */
@@ -776,6 +782,46 @@ export function ControlPanel({ settings, displayCount, onChange, onReset, onRand
               <Shuffle className="w-3.5 h-3.5" />
               {displayCount === 1 ? 'Randomize' : `Randomize ${displayCount} cards`}
             </button>
+          </Section>
+
+          <Separator />
+
+          {/* ── Camera section ── */}
+          <Section title="Camera" icon={<Camera className="w-3.5 h-3.5" />}>
+            <div className="space-y-4">
+              {/* Projection mode */}
+              <div>
+                <p className="text-[12px] text-black/60 font-medium mb-2">Projection</p>
+                <PillToggle
+                  value={settings.cameraMode ?? 'perspective'}
+                  options={[
+                    { value: 'perspective', label: 'Perspective' },
+                    { value: 'isometric',   label: 'Isometric' },
+                  ]}
+                  onChange={(v) => onChange({ cameraMode: v as CameraMode })}
+                />
+              </div>
+
+              {/* Focal length — perspective only */}
+              {(settings.cameraMode ?? 'perspective') === 'perspective' && (
+                <SliderRow
+                  label="Focal length"
+                  value={settings.cameraFov ?? 42}
+                  min={10}
+                  max={90}
+                  step={1}
+                  format={fovToMm}
+                  onChange={(v) => onChange({ cameraFov: v })}
+                />
+              )}
+
+              {/* Isometric hint */}
+              {settings.cameraMode === 'isometric' && (
+                <p className="text-[10px] text-black/30 leading-relaxed">
+                  Orthographic projection — no vanishing point. All parallel lines stay parallel.
+                </p>
+              )}
+            </div>
           </Section>
 
           <Separator />

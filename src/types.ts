@@ -1,5 +1,6 @@
 export type Finish = 'metallic' | 'plastic' | 'matte'
 export type Orientation = 'horizontal' | 'vertical'
+export type CameraMode = 'perspective' | 'isometric'
 
 export interface CardSettings {
   rotX: number           // degrés: -90 → 90
@@ -17,6 +18,8 @@ export interface CardSettings {
   autoRotate: boolean
   lightIntensity: number     // 0 → 2
   bgColor: string | 'transparent'  // hex ou 'transparent'
+  cameraFov:  number         // 10 → 90°, default 42 — scene-level
+  cameraMode: CameraMode     // 'perspective' | 'isometric' — scene-level
 }
 
 export interface CardPage {

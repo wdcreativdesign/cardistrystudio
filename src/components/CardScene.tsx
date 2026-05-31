@@ -3,7 +3,7 @@ import { Canvas, useThree, useFrame } from '@react-three/fiber'
 import { Environment, ContactShadows } from '@react-three/drei'
 import * as THREE from 'three'
 import { Card3D } from './Card3D'
-import { type CardSettings } from '@/types'
+import { type CardSettings, type CameraMode } from '@/types'
 
 /* ─── Background sphere ──────────────────────────────────────────── */
 function hexToRgb(hex: string) {
@@ -160,15 +160,49 @@ function Lighting({ intensity: i }: { intensity: number }) {
   )
 }
 
-/* ─── Camera rig — smooth zoom based on card count ───────────────── */
-const CAMERA_Z: Record<number, number> = { 1: 5.4, 2: 8.5, 3: 12.0 }
+/* ─── Camera controller — FOV + smooth Z (compensated for lens) ─── */
 
-function CameraRig({ count }: { count: number }) {
+/** Base camera Z distances at the reference FOV (42°) */
+const BASE_Z: Record<number, number> = { 1: 5.4, 2: 8.5, 3: 12.0 }
+const BASE_FOV = 42
+/** Simulated FOV used for isometric mode (≈ orthographic look) */
+const ISO_FOV  = 5
+
+function CameraController({
+  fov,
+  mode,
+  count,
+}: {
+  fov:   number
+  mode:  CameraMode
+  count: number
+}) {
   const { camera } = useThree()
-  const targetZ = CAMERA_Z[count] ?? 5.4
+
+  const effectiveFov = mode === 'isometric' ? ISO_FOV : fov
+
+  /**
+   * Compensate camera Z so the card appears the same visual size
+   * regardless of FOV: targetZ = baseZ × tan(BASE_FOV/2) / tan(fov/2)
+   */
+  const baseZ   = BASE_Z[count] ?? 5.4
+  const targetZ = baseZ
+    * Math.tan((BASE_FOV / 2) * (Math.PI / 180))
+    / Math.tan((effectiveFov / 2) * (Math.PI / 180))
+
+  /* Smooth Z animation */
   useFrame(() => {
     camera.position.z += (targetZ - camera.position.z) * 0.07
   })
+
+  /* Update FOV and projection matrix */
+  useEffect(() => {
+    if (camera instanceof THREE.PerspectiveCamera) {
+      camera.fov = effectiveFov
+      camera.updateProjectionMatrix()
+    }
+  }, [camera, effectiveFov])
+
   return null
 }
 
@@ -200,8 +234,10 @@ export interface CardSceneProps {
 export function CardScene({ displayedPages, displayCount, tilt, glRef, sceneRef, cameraRef, onReady }: CardSceneProps) {
   // Scene-level settings from the active card (or fallback to first)
   const activePage = displayedPages.find((p) => p.isActive) ?? displayedPages[0]
-  const bgColor       = activePage?.settings.bgColor       ?? '#f0f0f5'
+  const bgColor        = activePage?.settings.bgColor        ?? '#f0f0f5'
   const lightIntensity = activePage?.settings.lightIntensity ?? 1.15
+  const cameraFov      = activePage?.settings.cameraFov      ?? 42
+  const cameraMode     = activePage?.settings.cameraMode     ?? 'perspective'
 
   const positions = CARD_POSITIONS[displayCount] ?? [0]
 
@@ -259,7 +295,7 @@ export function CardScene({ displayedPages, displayCount, tilt, glRef, sceneRef,
         </group>
       ))}
 
-      <CameraRig count={displayCount} />
+      <CameraController fov={cameraFov} mode={cameraMode} count={displayCount} />
       <SceneHelper glRef={glRef} sceneRef={sceneRef} cameraRef={cameraRef} />
     </Canvas>
   )
