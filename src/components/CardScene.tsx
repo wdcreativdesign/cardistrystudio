@@ -1,4 +1,4 @@
-import { useEffect, useMemo, MutableRefObject } from 'react'
+import { useEffect, useRef, useMemo, MutableRefObject } from 'react'
 import { Canvas, useThree, useFrame } from '@react-three/fiber'
 import { Environment, ContactShadows } from '@react-three/drei'
 import * as THREE from 'three'
@@ -38,7 +38,7 @@ function SceneBackground({ color }: { color: string }) {
 
   return (
     <mesh name="scene-bg">
-      <sphereGeometry args={[28, 32, 32]} />
+      <sphereGeometry args={[90, 32, 32]} />
       <meshBasicMaterial map={texture} side={THREE.BackSide} />
     </mesh>
   )
@@ -160,13 +160,12 @@ function Lighting({ intensity: i }: { intensity: number }) {
   )
 }
 
-/* ─── Camera controller — FOV + smooth Z (compensated for lens) ─── */
+/* ─── Camera controller — true ortho swap + FOV compensation ──────── */
 
-/** Base camera Z distances at the reference FOV (42°) */
-const BASE_Z: Record<number, number> = { 1: 5.4, 2: 8.5, 3: 12.0 }
+const DEG     = Math.PI / 180
 const BASE_FOV = 42
-/** Simulated FOV used for isometric mode (≈ orthographic look) */
-const ISO_FOV  = 5
+/** Base camera Z at reference FOV (42°), per card count */
+const BASE_Z: Record<number, number> = { 1: 5.4, 2: 8.5, 3: 12.0 }
 
 function CameraController({
   fov,
@@ -177,31 +176,69 @@ function CameraController({
   mode:  CameraMode
   count: number
 }) {
-  const { camera } = useThree()
+  const { camera, set, size } = useThree()
 
-  const effectiveFov = mode === 'isometric' ? ISO_FOV : fov
+  /* Keep one instance of each camera type across renders */
+  const perspRef = useRef<THREE.PerspectiveCamera | null>(null)
+  const orthoRef = useRef<THREE.OrthographicCamera | null>(null)
 
-  /**
-   * Compensate camera Z so the card appears the same visual size
-   * regardless of FOV: targetZ = baseZ × tan(BASE_FOV/2) / tan(fov/2)
-   */
-  const baseZ   = BASE_Z[count] ?? 5.4
-  const targetZ = baseZ
-    * Math.tan((BASE_FOV / 2) * (Math.PI / 180))
-    / Math.tan((effectiveFov / 2) * (Math.PI / 180))
+  const baseZ  = BASE_Z[count] ?? 5.4
+  /** Perspective: compensate Z so card stays the same visual size at any FOV */
+  const perspZ = baseZ * Math.tan(BASE_FOV / 2 * DEG) / Math.tan(fov / 2 * DEG)
+  /** Ortho: frustum half-height = visible world height at base camera distance */
+  const halfH  = Math.tan(BASE_FOV / 2 * DEG) * baseZ
+  const halfW  = halfH * (size.width / size.height)
 
-  /* Smooth Z animation */
+  /* ── Capture the canvas's initial PerspectiveCamera once ── */
+  useEffect(() => {
+    if (camera instanceof THREE.PerspectiveCamera && !perspRef.current) {
+      perspRef.current = camera
+    }
+  }, [camera])
+
+  /* ── Smooth Z lerp (perspective only, handled in rAF) ── */
   useFrame(() => {
-    camera.position.z += (targetZ - camera.position.z) * 0.07
+    if (mode === 'perspective') {
+      camera.position.z += (perspZ - camera.position.z) * 0.07
+    }
   })
 
-  /* Update FOV and projection matrix */
+  /* ── FOV update for perspective camera ── */
   useEffect(() => {
-    if (camera instanceof THREE.PerspectiveCamera) {
-      camera.fov = effectiveFov
-      camera.updateProjectionMatrix()
+    const cam = perspRef.current
+    if (!cam) return
+    cam.fov = fov
+    cam.updateProjectionMatrix()
+  }, [fov])
+
+  /* ── Swap camera type / update ortho frustum ── */
+  useEffect(() => {
+    if (mode === 'isometric') {
+      if (!orthoRef.current) {
+        /* Create the orthographic camera once */
+        const ortho = new THREE.OrthographicCamera(
+          -halfW, halfW, halfH, -halfH, 0.1, 500,
+        )
+        ortho.position.set(0, 0, 50)
+        orthoRef.current = ortho
+      } else {
+        /* Update frustum on resize or card-count change */
+        orthoRef.current.left   = -halfW
+        orthoRef.current.right  =  halfW
+        orthoRef.current.top    =  halfH
+        orthoRef.current.bottom = -halfH
+        orthoRef.current.updateProjectionMatrix()
+      }
+      set({ camera: orthoRef.current })
+    } else {
+      /* Restore the perspective camera */
+      const cam = perspRef.current
+      if (cam) {
+        cam.position.z = perspZ   // snap to correct distance for current count/fov
+        set({ camera: cam })
+      }
     }
-  }, [camera, effectiveFov])
+  }, [mode, halfW, halfH, set]) // halfW/H change with count+size, perspZ not needed here
 
   return null
 }
@@ -246,7 +283,7 @@ export function CardScene({ displayedPages, displayCount, tilt, glRef, sceneRef,
 
   return (
     <Canvas
-      camera={{ position: [0, 0, 5.4], fov: 42, near: 0.1, far: 100 }}
+      camera={{ position: [0, 0, 5.4], fov: 42, near: 0.1, far: 500 }}
       gl={{ preserveDrawingBuffer: true, antialias: true, alpha: true }}
       dpr={[1, 2]}
       shadows
