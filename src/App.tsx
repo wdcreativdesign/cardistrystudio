@@ -576,6 +576,7 @@ export default function App() {
           logoColor={contrastColor(settings.bgColor)}
           credits={displayCredits}
           onBuyCredits={() => setShowBuyCredits(true)}
+          userEmail={currentUser?.email ?? null}
         />
 
         <div
