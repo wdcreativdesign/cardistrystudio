@@ -216,13 +216,17 @@ export function CardScene({ displayedPages, displayCount, tilt, glRef, sceneRef,
       shadows
       onCreated={() => requestAnimationFrame(() => onReady?.())}
     >
-      {/* Named group — hidden during transparent export */}
+      {/* Background sphere — hidden during transparent export */}
       <group name="bg-layers">
         {bgColor !== 'transparent'
           && !bgColor.startsWith('linear-gradient')
           && !bgColor.startsWith('radial-gradient')
           && <SceneBackground color={bgColor} />
         }
+      </group>
+
+      {/* Contact shadow — independently togglable during export */}
+      <group name="shadow-layer">
         <ContactShadows
           position={[0, -1.75, 0]}
           opacity={0.22}

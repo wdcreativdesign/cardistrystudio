@@ -371,20 +371,26 @@ export default function App() {
   }, [])
 
   /* ── Capture preview (used by ExportTab thumbnail) ── */
-  const capturePreview = useCallback((): { dataUrl: string; cssW: number; cssH: number } | null => {
+  const capturePreview = useCallback((opts?: { showShadow?: boolean }): { dataUrl: string; cssW: number; cssH: number } | null => {
     const gl     = glRef.current
     const scene  = sceneRef.current
     const camera = cameraRef.current
     if (!gl || !scene || !camera) return null
 
     const isTransparent = settingsRef.current.bgColor === 'transparent'
+    const showShadow    = opts?.showShadow ?? true
     const cssW = gl.domElement.clientWidth
     const cssH = gl.domElement.clientHeight
+
+    const bgLayers   = scene.getObjectByName('bg-layers')
+    const shadowLayer = scene.getObjectByName('shadow-layer')
+
+    /* Hide shadow if requested */
+    if (shadowLayer && !showShadow) shadowLayer.visible = false
 
     let dataUrl: string
 
     if (isTransparent) {
-      const bgLayers = scene.getObjectByName('bg-layers')
       if (bgLayers) bgLayers.visible = false
       const savedColor = new THREE.Color()
       gl.getClearColor(savedColor)
@@ -395,17 +401,20 @@ export default function App() {
       dataUrl = gl.domElement.toDataURL('image/png', 0.85)
       gl.setClearColor(savedColor, savedAlpha)
       if (bgLayers) bgLayers.visible = true
-      gl.render(scene, camera)
     } else {
       gl.render(scene, camera)
       dataUrl = gl.domElement.toDataURL('image/png', 0.85)
     }
 
+    /* Restore shadow + final render */
+    if (shadowLayer) shadowLayer.visible = true
+    gl.render(scene, camera)
+
     return { dataUrl, cssW, cssH }
   }, [])
 
   /* ── Export (raw WebGL, appelé après vérification crédits) ── */
-  const doExport = useCallback((opts: { format: 'png' | 'jpg'; scale: number }) => {
+  const doExport = useCallback((opts: { format: 'png' | 'jpg'; scale: number; showShadow: boolean }) => {
     const gl     = glRef.current
     const scene  = sceneRef.current
     const camera = cameraRef.current
@@ -416,13 +425,18 @@ export default function App() {
     const cssH    = gl.domElement.clientHeight
     const origDpr = gl.getPixelRatio()
 
+    const bgLayers    = scene.getObjectByName('bg-layers')
+    const shadowLayer  = scene.getObjectByName('shadow-layer')
+
     gl.setPixelRatio(opts.scale)
     gl.setSize(cssW, cssH, false)
+
+    /* Apply shadow visibility */
+    if (shadowLayer && !opts.showShadow) shadowLayer.visible = false
 
     let dataURL: string
 
     if (isTransparent) {
-      const bgLayers = scene.getObjectByName('bg-layers')
       if (bgLayers) bgLayers.visible = false
       const savedColor = new THREE.Color()
       gl.getClearColor(savedColor)
@@ -440,6 +454,8 @@ export default function App() {
       dataURL = gl.domElement.toDataURL(mimeType, quality)
     }
 
+    /* Restore shadow + clean up */
+    if (shadowLayer) shadowLayer.visible = true
     gl.setPixelRatio(origDpr)
     gl.setSize(cssW, cssH, false)
     gl.render(scene, camera)
@@ -451,7 +467,7 @@ export default function App() {
   }, [])
 
   /* ── Export avec vérification crédits ── */
-  const handleExport = useCallback(async (opts: { format: 'png' | 'jpg'; scale: number }) => {
+  const handleExport = useCallback(async (opts: { format: 'png' | 'jpg'; scale: number; showShadow: boolean }) => {
     // Dev mode — bypass all credit logic, export freely
     if (import.meta.env.DEV) { doExport(opts); return }
 

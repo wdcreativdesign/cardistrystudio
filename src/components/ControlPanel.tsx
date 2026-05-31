@@ -466,20 +466,23 @@ function ExportTab({
 }: {
   settings:         CardSettings
   onChange:         (p: Partial<CardSettings>) => void
-  onExport:         (opts: { format: ExportFormat; scale: number }) => void
-  onCapturePreview: () => CaptureResult | null
+  onExport:         (opts: { format: ExportFormat; scale: number; showShadow: boolean }) => void
+  onCapturePreview: (opts?: { showShadow?: boolean }) => CaptureResult | null
 }) {
   const [format,     setFormat]     = useState<ExportFormat>('png')
   const [scale,      setScale]      = useState(2)
+  const [showShadow, setShowShadow] = useState(true)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   const [cssSize,    setCssSize]    = useState<{ w: number; h: number } | null>(null)
 
-  /* Stable ref so effects never go stale */
-  const captureRef = useRef(onCapturePreview)
-  useEffect(() => { captureRef.current = onCapturePreview }, [onCapturePreview])
+  /* Stable refs so effects never go stale */
+  const captureRef    = useRef(onCapturePreview)
+  const showShadowRef = useRef(showShadow)
+  useEffect(() => { captureRef.current    = onCapturePreview }, [onCapturePreview])
+  useEffect(() => { showShadowRef.current = showShadow       }, [showShadow])
 
   function runCapture() {
-    const result = captureRef.current()
+    const result = captureRef.current({ showShadow: showShadowRef.current })
     if (result) {
       setPreviewUrl(result.dataUrl)
       setCssSize({ w: result.cssW, h: result.cssH })
@@ -492,11 +495,11 @@ function ExportTab({
     return () => clearTimeout(t)
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
-  /* Re-capture when background changes (scene needs ~2 frames to update) */
+  /* Re-capture when background or shadow toggle changes */
   useEffect(() => {
     const t = setTimeout(runCapture, 350)
     return () => clearTimeout(t)
-  }, [settings.bgColor]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [settings.bgColor, showShadow]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const isTransparent = settings.bgColor === 'transparent'
   const exportW = cssSize ? Math.round(cssSize.w * scale) : null
@@ -590,6 +593,18 @@ function ExportTab({
               ×{scale} = {scale === 1 ? 'screen size' : `${scale}× screen size`}
             </p>
           </div>
+
+          {/* Drop shadow toggle */}
+          <div className="flex items-center justify-between pt-1">
+            <div>
+              <p className="text-[12px] text-black/60 font-medium">Drop shadow</p>
+              <p className="text-[10px] text-black/30 mt-0.5">Include card shadow in export</p>
+            </div>
+            <Switch
+              checked={showShadow}
+              onCheckedChange={setShowShadow}
+            />
+          </div>
         </div>
       </Section>
 
@@ -598,7 +613,7 @@ function ExportTab({
       {/* Export button */}
       <div className="px-5 py-5">
         <button
-          onClick={() => onExport({ format, scale })}
+          onClick={() => onExport({ format, scale, showShadow })}
           className="relative w-full flex items-center justify-center gap-2 bg-[#1a1a1a] hover:bg-[#2d2d2d] text-white text-[13px] font-semibold py-3 rounded-xl transition-all active:scale-[0.98] shadow-sm"
         >
           <Download className="w-3.5 h-3.5" />
@@ -619,8 +634,8 @@ interface ControlPanelProps {
   onChange:         (patch: Partial<CardSettings>) => void
   onReset:          () => void
   onRandomize:      () => void
-  onExport:         (opts: { format: 'png' | 'jpg'; scale: number }) => void
-  onCapturePreview: () => CaptureResult | null
+  onExport:         (opts: { format: 'png' | 'jpg'; scale: number; showShadow: boolean }) => void
+  onCapturePreview: (opts?: { showShadow?: boolean }) => CaptureResult | null
 }
 
 export function ControlPanel({ settings, displayCount, onChange, onReset, onRandomize, onExport, onCapturePreview }: ControlPanelProps) {
