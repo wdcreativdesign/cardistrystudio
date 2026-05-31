@@ -48,6 +48,56 @@ function makeInitWorkspace(): Workspace {
 
 function makeId() { return Math.random().toString(36).slice(2, 9) }
 
+/* ── Canvas skeleton ─────────────────────────────────────────────── */
+function cardSilhouetteColor(bgColor: string): string {
+  if (bgColor === 'transparent') return 'rgba(0,0,0,0.06)'
+  if (bgColor.startsWith('linear') || bgColor.startsWith('radial')) return 'rgba(255,255,255,0.10)'
+  // Luminance from hex
+  const r = parseInt(bgColor.slice(1, 3), 16)
+  const g = parseInt(bgColor.slice(3, 5), 16)
+  const b = parseInt(bgColor.slice(5, 7), 16)
+  const lum = (0.299 * r + 0.587 * g + 0.114 * b) / 255
+  return lum > 0.5 ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.10)'
+}
+
+function CanvasSkeleton({
+  bgColor,
+  isVertical,
+  ready,
+}: {
+  bgColor:    string
+  isVertical: boolean
+  ready:      boolean
+}) {
+  const bg = bgColor === 'transparent'
+    ? 'repeating-conic-gradient(#d8d8d8 0% 25%, #f0f0f0 0% 50%) 0 0 / 20px 20px'
+    : bgColor
+
+  const silhouette = cardSilhouetteColor(bgColor)
+
+  /* Card aspect ratio ISO 7810 : 85.6 × 53.98 mm */
+  const cardW = isVertical ? '22vh' : '50vh'
+  const cardH = isVertical ? '34vh' : '32vh'
+
+  return (
+    <div
+      className="absolute inset-0 z-10 flex items-center justify-center transition-opacity duration-500 pointer-events-none"
+      style={{ background: bg, opacity: ready ? 0 : 1 }}
+    >
+      <div
+        className="animate-pulse"
+        style={{
+          width:        cardW,
+          height:       cardH,
+          borderRadius: '1.8vh',
+          background:   silhouette,
+          boxShadow:    '0 28px 56px -8px rgba(85,102,170,0.12)',
+        }}
+      />
+    </div>
+  )
+}
+
 /* ── App ─────────────────────────────────────────────────────────── */
 export default function App() {
   const [workspaces,         setWorkspaces]         = useState<Workspace[]>([makeInitWorkspace()])
@@ -58,6 +108,13 @@ export default function App() {
   const [showReloadConfirm,  setShowReloadConfirm]  = useState(false)
   const [showBuyCredits,     setShowBuyCredits]     = useState(false)
   const [creditSuccess,      setCreditSuccess]      = useState(false)
+  const [sceneReady,         setSceneReady]         = useState(false)
+  const [skeletonGone,       setSkeletonGone]       = useState(false)
+
+  const handleSceneReady = useCallback(() => {
+    setSceneReady(true)
+    setTimeout(() => setSkeletonGone(true), 650)
+  }, [])
 
   /* ── Current user ── */
   const [currentUser, setCurrentUser] = useState<User | null>(null)
@@ -500,6 +557,16 @@ export default function App() {
 
       {/* ── Canvas area ── */}
       <div className="flex-1 relative min-w-0">
+
+        {/* ── Skeleton — visible until first Three.js frame ── */}
+        {!skeletonGone && (
+          <CanvasSkeleton
+            bgColor={settings.bgColor}
+            isVertical={settings.orientation === 'vertical'}
+            ready={sceneReady}
+          />
+        )}
+
         <Header
           onRestart={handleRestart}
           onLogoClick={handleLogoClick}
@@ -524,6 +591,7 @@ export default function App() {
             glRef={glRef}
             sceneRef={sceneRef}
             cameraRef={cameraRef}
+            onReady={handleSceneReady}
           />
         </div>
 

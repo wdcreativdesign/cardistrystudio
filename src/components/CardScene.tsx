@@ -193,10 +193,11 @@ export interface CardSceneProps {
   glRef:     MutableRefObject<THREE.WebGLRenderer | null>
   sceneRef:  MutableRefObject<THREE.Scene | null>
   cameraRef: MutableRefObject<THREE.Camera | null>
+  onReady?:  () => void
 }
 
 /* ─── CardScene ──────────────────────────────────────────────────── */
-export function CardScene({ displayedPages, displayCount, tilt, glRef, sceneRef, cameraRef }: CardSceneProps) {
+export function CardScene({ displayedPages, displayCount, tilt, glRef, sceneRef, cameraRef, onReady }: CardSceneProps) {
   // Scene-level settings from the active card (or fallback to first)
   const activePage = displayedPages.find((p) => p.isActive) ?? displayedPages[0]
   const bgColor       = activePage?.settings.bgColor       ?? '#f0f0f5'
@@ -213,6 +214,7 @@ export function CardScene({ displayedPages, displayCount, tilt, glRef, sceneRef,
       gl={{ preserveDrawingBuffer: true, antialias: true, alpha: true }}
       dpr={[1, 2]}
       shadows
+      onCreated={() => requestAnimationFrame(() => onReady?.())}
     >
       {/* Named group — hidden during transparent export */}
       <group name="bg-layers">
