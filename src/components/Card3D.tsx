@@ -146,6 +146,16 @@ export function Card3D({ settings, tilt, isActive = false }: Card3DProps) {
     return () => { bodyGeo.dispose(); faceGeo.dispose() }
   }, [bodyGeo, faceGeo])
 
+  /* ── Texture puce (chargée une seule fois) ── */
+  const [chipTex, setChipTex] = useState<THREE.Texture | null>(null)
+  useEffect(() => {
+    const signal = { cancelled: false }
+    loadImageAsTexture('/chip.svg', (tex) => {
+      if (!signal.cancelled) setChipTex(tex)
+    }, signal)
+    return () => { signal.cancelled = true }
+  }, [])
+
   /* ── Textures utilisateur ── */
   const [frontTex, setFrontTex] = useState<THREE.Texture | null>(null)
   const [backTex,  setBackTex]  = useState<THREE.Texture | null>(null)
@@ -215,6 +225,33 @@ export function Card3D({ settings, tilt, isActive = false }: Card3DProps) {
   })
 
   const cfg = FINISH_CONFIGS[settings.finish]
+
+  /* ── Position puce — standard ISO 7810 / EMV ──────────────────────
+     Carte horizontale : puce à ~12 mm du bord gauche, ~19 mm du bas
+     Carte verticale   : même offset millimétrique en coordonnées locales
+  ─────────────────────────────────────────────────────────────────── */
+  const { cW, cH } = getDims(geoOrientation)
+  /* ── Dimensions puce — mesures exactes depuis CardMesurement.ai ──
+     Largeur  : 10.724 mm  (= 30.4 pt × 0.352778, ratio SVG 30.4×22.4 ✓)
+     Hauteur  :  7.902 mm  (= 22.4 pt × 0.352778)
+     Bord gauche :  9.666 mm depuis bord gauche carte
+     Bord haut   : 18.644 mm depuis bord supérieur carte
+  ─────────────────────────────────────────────────────────────────── */
+  const CHIP_W = 10.724 * MM
+  const CHIP_H =  7.902 * MM
+
+  /* ── Position + rotation puce ────────────────────────────────────
+     La carte verticale = carte horizontale tournée 90° CW.
+     On calcule la position sur la carte horizontale puis on applique
+     la rotation 90° CW : (x, y) → (y, -x).
+  ─────────────────────────────────────────────────────────────────── */
+  const chipX_h = -CARD_W / 2 + 9.666 * MM + CHIP_W / 2   // 9.666 mm du bord gauche
+  const chipY_h =  CARD_H / 2 - 18.644 * MM - CHIP_H / 2  // 18.644 mm du bord haut
+
+  const isVertical = geoOrientation === 'vertical'
+  const chipX    = isVertical ?  chipY_h  : chipX_h
+  const chipY    = isVertical ? -chipX_h  : chipY_h
+  const chipRotZ = isVertical ? -Math.PI / 2 : 0
 
   const faceMat = {
     metalness:          cfg.metalness * 0.5,
@@ -289,6 +326,21 @@ export function Card3D({ settings, tilt, isActive = false }: Card3DProps) {
           {...faceMat}
         />
       </mesh>
+
+      {/* ── Puce EMV — face avant uniquement ─────────────────────── */}
+      {chipTex && (
+        <mesh position={[chipX, chipY, Z_FACE + 0.0004]} rotation={[0, 0, chipRotZ]}>
+          <planeGeometry args={[CHIP_W, CHIP_H]} />
+          <meshPhysicalMaterial
+            map={chipTex}
+            metalness={0.55}
+            roughness={0.35}
+            clearcoat={0.6}
+            clearcoatRoughness={0.15}
+            envMapIntensity={1.2}
+          />
+        </mesh>
+      )}
 
     </group>
   )

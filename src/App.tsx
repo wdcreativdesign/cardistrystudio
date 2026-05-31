@@ -72,6 +72,11 @@ export default function App() {
   /* ── Credits ── */
   const { balance: credits, loading: creditsLoading } = useCredits(currentUser?.id)
 
+  // En dev sans user réel (dev skip), on affiche des crédits fictifs pour tester l'UI
+  const displayCredits = currentUser?.id
+    ? credits
+    : (import.meta.env.DEV ? 99 : null)
+
   /* ── Handle ?credits=ok return from Stripe ── */
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
@@ -499,7 +504,7 @@ export default function App() {
           onRestart={handleRestart}
           onLogoClick={handleLogoClick}
           logoColor={contrastColor(settings.bgColor)}
-          credits={credits}
+          credits={displayCredits}
           onBuyCredits={() => setShowBuyCredits(true)}
         />
 
@@ -600,7 +605,7 @@ export default function App() {
       {/* ── Buy credits modal ── */}
       {showBuyCredits && (
         <BuyCreditsModal
-          currentBalance={credits ?? 0}
+          currentBalance={displayCredits ?? 0}
           onClose={() => setShowBuyCredits(false)}
         />
       )}
