@@ -8,6 +8,7 @@ import { BottomBar } from './components/BottomBar'
 import { Header } from './components/Header'
 import { LeftPanel } from './components/LeftPanel'
 import { BuyCreditsModal } from './components/BuyCreditsModal'
+import { LoginModal } from './components/LoginModal'
 import { type CardSettings, type CardPage, type Workspace, type Orientation, type SavedPose } from './types'
 import { contrastColor } from './lib/utils'
 import { randomizePoses } from './lib/randomize'
@@ -110,6 +111,7 @@ export default function App() {
   const [pendingOrientation, setPendingOrientation] = useState<Orientation | null>(null)
   const [showReloadConfirm,  setShowReloadConfirm]  = useState(false)
   const [showBuyCredits,     setShowBuyCredits]     = useState(false)
+  const [showLoginModal,     setShowLoginModal]     = useState(false)
   const [creditSuccess,      setCreditSuccess]      = useState(false)
   const [sceneReady,         setSceneReady]         = useState(false)
   const [skeletonGone,       setSkeletonGone]       = useState(false)
@@ -473,11 +475,11 @@ export default function App() {
 
   /* ── Export avec vérification crédits ── */
   const handleExport = useCallback(async (opts: { format: 'png' | 'jpg'; scale: number; showShadow: boolean }) => {
-    // Dev mode — bypass all credit logic, export freely
-    if (import.meta.env.DEV) { doExport(opts); return }
+    // No authenticated user — prompt login (always, even in dev)
+    if (!currentUser) { setShowLoginModal(true); return }
 
-    // No authenticated user — export directly without credit check
-    if (!currentUser) { doExport(opts); return }
+    // Dev mode — bypass credit logic only
+    if (import.meta.env.DEV) { doExport(opts); return }
 
     // Still loading balance — don't open modal, just wait
     if (creditsLoading) return
@@ -632,7 +634,8 @@ export default function App() {
           logoColor={contrastColor(settings.bgColor)}
           credits={displayCredits}
           onBuyCredits={() => setShowBuyCredits(true)}
-          userEmail={currentUser?.email ?? (import.meta.env.DEV ? 'dev@localhost' : null)}
+          onSignIn={() => setShowLoginModal(true)}
+          userEmail={currentUser?.email ?? null}
         />
 
         <div
@@ -729,6 +732,14 @@ export default function App() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* ── Login modal ── */}
+      {showLoginModal && (
+        <LoginModal
+          reason="export"
+          onClose={() => setShowLoginModal(false)}
+        />
       )}
 
       {/* ── Buy credits modal ── */}

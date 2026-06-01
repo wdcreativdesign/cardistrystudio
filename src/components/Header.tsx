@@ -13,6 +13,7 @@ interface HeaderProps {
   logoColor?:    '#1a1a1a' | '#ffffff'
   credits?:      number | null
   onBuyCredits?: () => void
+  onSignIn?:     () => void
   userEmail?:    string | null
 }
 
@@ -23,6 +24,7 @@ export function Header({
   logoColor = '#1a1a1a',
   credits,
   onBuyCredits,
+  onSignIn,
   userEmail,
 }: HeaderProps) {
   const [menuOpen, setMenuOpen] = useState(false)
@@ -124,8 +126,8 @@ export function Header({
       {/* ── Actions ── */}
       <div className="pointer-events-auto flex items-center gap-2">
 
-        {/* Credits badge — shown only when no avatar (dev mode without auth) */}
-        {!hasAvatar && credits != null && (
+        {/* Credits badge — shown only when logged in */}
+        {hasAvatar && credits != null && (
           <button
             onClick={onBuyCredits}
             title="Buy credits"
@@ -153,6 +155,19 @@ export function Header({
           <RotateCcw className="w-3.5 h-3.5" />
           Restart
         </button>
+
+        {/* ── Sign in (non connecté) ── */}
+        {!hasAvatar && (
+          <button
+            onClick={onSignIn}
+            className={cn(
+              'flex items-center gap-2 border text-[13px] font-medium px-4 py-2 h-9 rounded-xl shadow-sm transition-all active:scale-[0.97]',
+              btnClass,
+            )}
+          >
+            Sign in
+          </button>
+        )}
 
         {/* ── Avatar / Profile dropdown ── */}
         {hasAvatar && (
