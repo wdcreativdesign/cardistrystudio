@@ -269,28 +269,30 @@ export function Card3D({ settings, tilt, isActive = false }: Card3DProps) {
     <group ref={groupRef}>
 
       {/* ── Lueur sélection (derrière les faces, bords visibles) ──── */}
-      {isActive && GLOW_LAYERS.map((g, i) => (
-        <mesh key={`gf${i}`} geometry={faceGeo} position={[0, 0, GLOW_ZF]} scale={g.scale}>
-          <meshBasicMaterial
-            ref={(m) => { glowRefs.current[i] = m }}
-            color={settings.edgeColor}
-            transparent
-            opacity={g.base}
-            depthWrite={false}
-          />
-        </mesh>
-      ))}
-      {isActive && GLOW_LAYERS.map((g, i) => (
-        <mesh key={`gb${i}`} geometry={faceGeo} position={[0, 0, GLOW_ZB]} rotation={[0, Math.PI, 0]} scale={g.scale}>
-          <meshBasicMaterial
-            ref={(m) => { glowRefs.current[GLOW_LAYERS.length + i] = m }}
-            color={settings.edgeColor}
-            transparent
-            opacity={g.base}
-            depthWrite={false}
-          />
-        </mesh>
-      ))}
+      <group name="selection-glow">
+        {isActive && GLOW_LAYERS.map((g, i) => (
+          <mesh key={`gf${i}`} geometry={faceGeo} position={[0, 0, GLOW_ZF]} scale={g.scale}>
+            <meshBasicMaterial
+              ref={(m) => { glowRefs.current[i] = m }}
+              color={settings.edgeColor}
+              transparent
+              opacity={g.base}
+              depthWrite={false}
+            />
+          </mesh>
+        ))}
+        {isActive && GLOW_LAYERS.map((g, i) => (
+          <mesh key={`gb${i}`} geometry={faceGeo} position={[0, 0, GLOW_ZB]} rotation={[0, Math.PI, 0]} scale={g.scale}>
+            <meshBasicMaterial
+              ref={(m) => { glowRefs.current[GLOW_LAYERS.length + i] = m }}
+              color={settings.edgeColor}
+              transparent
+              opacity={g.base}
+              depthWrite={false}
+            />
+          </mesh>
+        ))}
+      </group>
 
       {/* ── Corps (tranche) — ExtrudeGeometry centrée sur Z ──────── */}
       <mesh geometry={bodyGeo} castShadow>

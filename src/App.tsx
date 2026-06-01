@@ -440,8 +440,14 @@ export default function App() {
     const bgLayers   = scene.getObjectByName('bg-layers')
     const shadowLayer = scene.getObjectByName('shadow-layer')
 
+    /* Collect all selection-glow groups (one per card in multi-card mode) */
+    const glowGroups: THREE.Object3D[] = []
+    scene.traverse((obj) => { if (obj.name === 'selection-glow') glowGroups.push(obj) })
+
     /* Hide shadow if requested */
     if (shadowLayer && !showShadow) shadowLayer.visible = false
+    /* Always hide selection glow in exports */
+    glowGroups.forEach((g) => { g.visible = false })
 
     let dataUrl: string
 
@@ -461,8 +467,9 @@ export default function App() {
       dataUrl = gl.domElement.toDataURL('image/png', 0.85)
     }
 
-    /* Restore shadow + final render */
+    /* Restore shadow + glow + final render */
     if (shadowLayer) shadowLayer.visible = true
+    glowGroups.forEach((g) => { g.visible = true })
     gl.render(scene, camera)
 
     return { dataUrl, cssW, cssH }
@@ -483,11 +490,16 @@ export default function App() {
     const bgLayers    = scene.getObjectByName('bg-layers')
     const shadowLayer  = scene.getObjectByName('shadow-layer')
 
+    /* Collect all selection-glow groups (one per card in multi-card mode) */
+    const glowGroups: THREE.Object3D[] = []
+    scene.traverse((obj) => { if (obj.name === 'selection-glow') glowGroups.push(obj) })
+
     gl.setPixelRatio(opts.scale)
     gl.setSize(cssW, cssH, false)
 
-    /* Apply shadow visibility */
+    /* Apply shadow visibility + always hide selection glow */
     if (shadowLayer && !opts.showShadow) shadowLayer.visible = false
+    glowGroups.forEach((g) => { g.visible = false })
 
     let dataURL: string
 
@@ -509,8 +521,9 @@ export default function App() {
       dataURL = gl.domElement.toDataURL(mimeType, quality)
     }
 
-    /* Restore shadow + clean up */
+    /* Restore shadow + glow + clean up */
     if (shadowLayer) shadowLayer.visible = true
+    glowGroups.forEach((g) => { g.visible = true })
     gl.setPixelRatio(origDpr)
     gl.setSize(cssW, cssH, false)
     gl.render(scene, camera)
