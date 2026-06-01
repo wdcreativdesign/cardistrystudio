@@ -43,7 +43,7 @@ function Section({ title, icon, children, defaultOpen = true }: {
         'grid transition-all duration-200 ease-in-out',
         open ? 'grid-rows-[1fr] mt-4' : 'grid-rows-[0fr]',
       )}>
-        <div className="overflow-hidden -mx-2 px-2">
+        <div className="overflow-hidden">
           <div className="space-y-5">{children}</div>
         </div>
       </div>
@@ -523,7 +523,7 @@ function ExportTab({
             background: isTransparent
               ? 'repeating-conic-gradient(#e0e0e0 0% 25%, #f5f5f5 0% 50%) 0 0 / 10px 10px'
               : 'transparent',
-            minHeight: 72,
+            aspectRatio: '8 / 5',
           }}
         >
           {previewUrl ? (
@@ -531,8 +531,7 @@ function ExportTab({
               <img
                 src={previewUrl}
                 alt="Export preview"
-                className="w-full object-contain block"
-                style={{ maxHeight: 148, display: 'block' }}
+                className="absolute inset-0 w-full h-full object-cover block"
               />
               {/* Refresh button */}
               <button
@@ -544,7 +543,7 @@ function ExportTab({
               </button>
             </>
           ) : (
-            <div className="flex items-center justify-center py-8">
+            <div className="absolute inset-0 flex items-center justify-center">
               <Loader2 className="w-4 h-4 text-black/20 animate-spin" />
             </div>
           )}

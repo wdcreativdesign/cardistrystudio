@@ -37,6 +37,10 @@ const DEFAULT_SETTINGS: CardSettings = {
   cameraMode: 'perspective',
 }
 
+/* ── Fixed export canvas size (independent of browser window) ────── */
+const EXPORT_W = 1600
+const EXPORT_H = 1000
+
 /* ── Camera Z per display count (mirrors CardScene) ─────────────── */
 const CAM_Z_MAP: Record<number, number> = { 1: 5.4, 2: 8.5, 3: 12.0 }
 const CAM_FOV_TAN = Math.tan((42 / 2) * (Math.PI / 180))
@@ -445,19 +449,42 @@ export default function App() {
 
     const isTransparent = settingsRef.current.bgColor === 'transparent'
     const showShadow    = opts?.showShadow ?? true
-    const cssW = gl.domElement.clientWidth
-    const cssH = gl.domElement.clientHeight
 
-    const bgLayers   = scene.getObjectByName('bg-layers')
+    /* Save renderer state */
+    const origDpr = gl.getPixelRatio()
+    const origW   = gl.domElement.clientWidth
+    const origH   = gl.domElement.clientHeight
+
+    /* Save + update camera aspect for fixed export dimensions */
+    let savedAspect: number | null = null
+    let savedOrthoLeft: number | null = null
+    let savedOrthoRight: number | null = null
+    if (camera instanceof THREE.PerspectiveCamera) {
+      savedAspect   = camera.aspect
+      camera.aspect = EXPORT_W / EXPORT_H
+      camera.updateProjectionMatrix()
+    } else if (camera instanceof THREE.OrthographicCamera) {
+      savedOrthoLeft  = camera.left
+      savedOrthoRight = camera.right
+      const halfH = (camera.top - camera.bottom) / 2
+      const halfW = halfH * (EXPORT_W / EXPORT_H)
+      camera.left  = -halfW
+      camera.right =  halfW
+      camera.updateProjectionMatrix()
+    }
+
+    /* Render at fixed export ratio (scale 1 for speed) */
+    gl.setPixelRatio(1)
+    gl.setSize(EXPORT_W, EXPORT_H, false)
+
+    const bgLayers    = scene.getObjectByName('bg-layers')
     const shadowLayer = scene.getObjectByName('shadow-layer')
 
     /* Collect all selection-glow groups (one per card in multi-card mode) */
     const glowGroups: THREE.Object3D[] = []
     scene.traverse((obj) => { if (obj.name === 'selection-glow') glowGroups.push(obj) })
 
-    /* Hide shadow if requested */
     if (shadowLayer && !showShadow) shadowLayer.visible = false
-    /* Always hide selection glow in exports */
     glowGroups.forEach((g) => { g.visible = false })
 
     let dataUrl: string
@@ -478,12 +505,24 @@ export default function App() {
       dataUrl = gl.domElement.toDataURL('image/png', 0.85)
     }
 
-    /* Restore shadow + glow + final render */
+    /* Restore shadow + glow */
     if (shadowLayer) shadowLayer.visible = true
     glowGroups.forEach((g) => { g.visible = true })
+
+    /* Restore renderer + camera */
+    gl.setPixelRatio(origDpr)
+    gl.setSize(origW, origH, false)
+    if (camera instanceof THREE.PerspectiveCamera && savedAspect !== null) {
+      camera.aspect = savedAspect
+      camera.updateProjectionMatrix()
+    } else if (camera instanceof THREE.OrthographicCamera && savedOrthoLeft !== null && savedOrthoRight !== null) {
+      camera.left  = savedOrthoLeft
+      camera.right = savedOrthoRight
+      camera.updateProjectionMatrix()
+    }
     gl.render(scene, camera)
 
-    return { dataUrl, cssW, cssH }
+    return { dataUrl, cssW: EXPORT_W, cssH: EXPORT_H }
   }, [])
 
   /* ── Export (raw WebGL, appelé après vérification crédits) ── */
@@ -494,9 +533,29 @@ export default function App() {
     if (!gl || !scene || !camera) return
 
     const isTransparent = settingsRef.current.bgColor === 'transparent'
-    const cssW    = gl.domElement.clientWidth
-    const cssH    = gl.domElement.clientHeight
+
+    /* Save original renderer state */
     const origDpr = gl.getPixelRatio()
+    const origW   = gl.domElement.clientWidth
+    const origH   = gl.domElement.clientHeight
+
+    /* Save + update camera aspect ratio for fixed export dimensions */
+    let savedAspect: number | null = null
+    let savedOrthoLeft: number | null = null
+    let savedOrthoRight: number | null = null
+    if (camera instanceof THREE.PerspectiveCamera) {
+      savedAspect   = camera.aspect
+      camera.aspect = EXPORT_W / EXPORT_H
+      camera.updateProjectionMatrix()
+    } else if (camera instanceof THREE.OrthographicCamera) {
+      savedOrthoLeft  = camera.left
+      savedOrthoRight = camera.right
+      const halfH = (camera.top - camera.bottom) / 2
+      const halfW = halfH * (EXPORT_W / EXPORT_H)
+      camera.left  = -halfW
+      camera.right =  halfW
+      camera.updateProjectionMatrix()
+    }
 
     const bgLayers    = scene.getObjectByName('bg-layers')
     const shadowLayer  = scene.getObjectByName('shadow-layer')
@@ -505,8 +564,9 @@ export default function App() {
     const glowGroups: THREE.Object3D[] = []
     scene.traverse((obj) => { if (obj.name === 'selection-glow') glowGroups.push(obj) })
 
+    /* Resize to fixed export dimensions */
     gl.setPixelRatio(opts.scale)
-    gl.setSize(cssW, cssH, false)
+    gl.setSize(EXPORT_W, EXPORT_H, false)
 
     /* Apply shadow visibility + always hide selection glow */
     if (shadowLayer && !opts.showShadow) shadowLayer.visible = false
@@ -532,17 +592,27 @@ export default function App() {
       dataURL = gl.domElement.toDataURL(mimeType, quality)
     }
 
-    /* Restore shadow + glow + clean up */
+    /* Restore shadow + glow */
     if (shadowLayer) shadowLayer.visible = true
     glowGroups.forEach((g) => { g.visible = true })
+
+    /* Restore canvas size + camera */
     gl.setPixelRatio(origDpr)
-    gl.setSize(cssW, cssH, false)
+    gl.setSize(origW, origH, false)
+    if (camera instanceof THREE.PerspectiveCamera && savedAspect !== null) {
+      camera.aspect = savedAspect
+      camera.updateProjectionMatrix()
+    } else if (camera instanceof THREE.OrthographicCamera && savedOrthoLeft !== null && savedOrthoRight !== null) {
+      camera.left  = savedOrthoLeft
+      camera.right = savedOrthoRight
+      camera.updateProjectionMatrix()
+    }
     gl.render(scene, camera)
 
     const ext  = isTransparent ? 'png' : opts.format
     trackExport(ext, opts.scale)
     const link = document.createElement('a')
-    link.download = `cardistrystudio-export@${opts.scale}x.${ext}`
+    link.download = `cardistrystudio-export-${EXPORT_W}x${EXPORT_H}@${opts.scale}x.${ext}`
     link.href = dataURL; link.click()
   }, [])
 
