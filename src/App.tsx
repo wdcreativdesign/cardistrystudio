@@ -33,9 +33,8 @@ const DEFAULT_SETTINGS: CardSettings = {
   autoRotate: false,
   lightIntensity: 1.15,
   bgColor: '#f0f0f5',
-  cameraFov:   42,
-  cameraMode:  'perspective',
-  hdriPreset:  'studio',
+  cameraFov:  42,
+  cameraMode: 'perspective',
 }
 
 /* ── Camera Z per display count (mirrors CardScene) ─────────────── */
@@ -212,6 +211,10 @@ export default function App() {
   const lastPointer  = useRef({ x: 0, y: 0 })
   const pointerStart = useRef({ x: 0, y: 0 })
   const containerRef = useRef<HTMLDivElement>(null)
+
+  /* ── Drag throttle — bufferise les deltas, flush 1× par frame ── */
+  const dragBuf = useRef<Partial<{ rotX: number; rotY: number; posX: number; posY: number; autoRotate: boolean }>>({})
+  const dragRaf = useRef<number | null>(null)
 
   const settingsRef        = useRef(settings)
   const activeWsRef        = useRef(activeWorkspace)
@@ -583,59 +586,61 @@ export default function App() {
     e.currentTarget.setPointerCapture(e.pointerId)
   }, [])
 
+  /* Flush drag buffer → React state, 1× par animation frame max */
+  const flushDrag = useCallback(() => {
+    dragRaf.current = null
+    const patch = dragBuf.current
+    if (!Object.keys(patch).length) return
+    dragBuf.current = {}
+    const activeId = activeWsRef.current.activePageId
+    patchWs((ws) => ({
+      ...ws,
+      pages: ws.pages.map((p) =>
+        p.id !== activeId ? p : { ...p, settings: { ...p.settings, ...patch } }
+      ),
+    }))
+  }, [patchWs])
+
+  const scheduleDragFlush = useCallback(() => {
+    if (!dragRaf.current) dragRaf.current = requestAnimationFrame(flushDrag)
+  }, [flushDrag])
+
   const onPointerMove = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
     if (isDragging.current) {
       const dx = e.clientX - lastPointer.current.x
       const dy = e.clientY - lastPointer.current.y
       lastPointer.current = { x: e.clientX, y: e.clientY }
-      const activeId = activeWsRef.current.activePageId
 
       if (e.altKey) {
         const containerW = containerRef.current?.getBoundingClientRect().width  || 800
         const containerH = containerRef.current?.getBoundingClientRect().height || 600
         const camZ = CAM_Z_MAP[activeWsRef.current.displayCount] ?? 5.4
-        const senX =  camZ * CAM_FOV_TAN * 2 / containerW
-        const senY =  camZ * CAM_FOV_TAN * 2 / containerH
-        patchWs((ws) => ({
-          ...ws,
-          pages: ws.pages.map((p) =>
-            p.id !== activeId ? p : {
-              ...p,
-              settings: {
-                ...p.settings,
-                posX: p.settings.posX + dx * senX,
-                posY: p.settings.posY - dy * senY,
-              },
-            },
-          ),
-        }))
+        const senX = camZ * CAM_FOV_TAN * 2 / containerW
+        const senY = camZ * CAM_FOV_TAN * 2 / containerH
+        /* Accumule sur les valeurs déjà dans le buffer (ou dans le settings courant) */
+        const baseX = dragBuf.current.posX ?? activeWsRef.current.pages.find(p => p.id === activeWsRef.current.activePageId)?.settings.posX ?? 0
+        const baseY = dragBuf.current.posY ?? activeWsRef.current.pages.find(p => p.id === activeWsRef.current.activePageId)?.settings.posY ?? 0
+        dragBuf.current.posX = baseX + dx * senX
+        dragBuf.current.posY = baseY - dy * senY
       } else {
-        patchWs((ws) => ({
-          ...ws,
-          pages: ws.pages.map((p) => {
-            if (p.id !== activeId) return p
-            let newY = p.settings.rotY + dx * 0.45
-            while (newY >  180) newY -= 360
-            while (newY < -180) newY += 360
-            return {
-              ...p,
-              settings: {
-                ...p.settings,
-                autoRotate: false,
-                rotY: newY,
-                rotX: Math.max(-90, Math.min(90, p.settings.rotX - dy * 0.35)),
-              },
-            }
-          }),
-        }))
+        const activePage = activeWsRef.current.pages.find(p => p.id === activeWsRef.current.activePageId)
+        const baseY = dragBuf.current.rotY ?? activePage?.settings.rotY ?? 0
+        const baseX = dragBuf.current.rotX ?? activePage?.settings.rotX ?? 0
+        let newY = baseY + dx * 0.45
+        while (newY >  180) newY -= 360
+        while (newY < -180) newY += 360
+        dragBuf.current.rotY       = newY
+        dragBuf.current.rotX       = Math.max(-90, Math.min(90, baseX - dy * 0.35))
+        dragBuf.current.autoRotate = false
       }
+      scheduleDragFlush()
     } else if (containerRef.current) {
       const rect = containerRef.current.getBoundingClientRect()
       const nx = ((e.clientX - rect.left) / rect.width  - 0.5) * 2
       const ny = ((e.clientY - rect.top)  / rect.height - 0.5) * 2
       setTilt({ x: ny * -4, y: nx * 4 })
     }
-  }, [patchWs])
+  }, [scheduleDragFlush])
 
   const onPointerUp = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
     const ws = activeWsRef.current
@@ -659,7 +664,9 @@ export default function App() {
   const onMouseLeave = useCallback(() => {
     isDragging.current = false
     setTilt({ x: 0, y: 0 })
-  }, [])
+    /* Flush immédiat si un RAF était en attente */
+    if (dragRaf.current) { cancelAnimationFrame(dragRaf.current); dragRaf.current = null; flushDrag() }
+  }, [flushDrag])
 
   /* ── Render ── */
   return (
