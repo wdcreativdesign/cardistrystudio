@@ -13,11 +13,11 @@ export function useCredits(userId: string | undefined) {
     // Initial fetch
     supabase
       .from('user_credits')
-      .select('balance')
+      .select('balance, unlimited')
       .eq('user_id', userId)
       .maybeSingle()
       .then(({ data }) => {
-        setBalance(data?.balance ?? 0)
+        setBalance(data?.unlimited ? 9999 : (data?.balance ?? 0))
         setLoading(false)
       })
 
@@ -33,7 +33,8 @@ export function useCredits(userId: string | undefined) {
           filter: `user_id=eq.${userId}`,
         },
         (payload) => {
-          setBalance((payload.new as { balance: number }).balance)
+          const row = payload.new as { balance: number; unlimited?: boolean }
+          setBalance(row.unlimited ? 9999 : row.balance)
         },
       )
       .subscribe()

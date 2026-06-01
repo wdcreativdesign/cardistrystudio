@@ -33,8 +33,9 @@ const DEFAULT_SETTINGS: CardSettings = {
   autoRotate: false,
   lightIntensity: 1.15,
   bgColor: '#f0f0f5',
-  cameraFov:  42,
-  cameraMode: 'perspective',
+  cameraFov:   42,
+  cameraMode:  'perspective',
+  hdriPreset:  'studio',
 }
 
 /* ── Camera Z per display count (mirrors CardScene) ─────────────── */
