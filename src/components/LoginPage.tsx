@@ -59,7 +59,7 @@ export function LoginPage({ onDevSkip }: { onDevSkip?: () => void }) {
               <span className="font-semibold">Cardistry</span>
               <span className="font-normal">Studio<sup className="text-[11px] align-super">™</sup></span>
             </span>
-            <p className="text-[13px] text-black/35 mt-1">3D Card Visualizer</p>
+            <p className="text-[13px] text-black/35 mt-1">Build your own 3D card</p>
           </div>
 
           {/* Form card */}
