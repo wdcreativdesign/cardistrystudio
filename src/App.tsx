@@ -52,6 +52,47 @@ function makeInitWorkspace(): Workspace {
 
 function makeId() { return Math.random().toString(36).slice(2, 9) }
 
+/* ── LocalStorage persistence ────────────────────────────────────── */
+const LS_WORKSPACES = 'cs-workspaces'
+const LS_ACTIVE_WS  = 'cs-active-ws'
+
+function loadWorkspaces(): { workspaces: Workspace[]; activeWorkspaceId: string } {
+  try {
+    const raw = localStorage.getItem(LS_WORKSPACES)
+    const id  = localStorage.getItem(LS_ACTIVE_WS)
+    if (raw) {
+      const workspaces: Workspace[] = JSON.parse(raw)
+      return { workspaces, activeWorkspaceId: id ?? workspaces[0]?.id ?? INIT_WS_ID }
+    }
+  } catch { /* ignore */ }
+  return { workspaces: [makeInitWorkspace()], activeWorkspaceId: INIT_WS_ID }
+}
+
+function saveWorkspaces(workspaces: Workspace[], activeWorkspaceId: string) {
+  try {
+    localStorage.setItem(LS_WORKSPACES, JSON.stringify(workspaces))
+    localStorage.setItem(LS_ACTIVE_WS,  activeWorkspaceId)
+  } catch {
+    // Quota exceeded (images too heavy) — retry without images
+    try {
+      const slim = workspaces.map((ws) => ({
+        ...ws,
+        pages: ws.pages.map((p) => ({
+          ...p,
+          settings: { ...p.settings, frontImage: null, backImage: null },
+        })),
+      }))
+      localStorage.setItem(LS_WORKSPACES, JSON.stringify(slim))
+      localStorage.setItem(LS_ACTIVE_WS,  activeWorkspaceId)
+    } catch { /* give up */ }
+  }
+}
+
+function clearWorkspaces() {
+  localStorage.removeItem(LS_WORKSPACES)
+  localStorage.removeItem(LS_ACTIVE_WS)
+}
+
 /* ── Canvas skeleton ─────────────────────────────────────────────── */
 function cardSilhouetteColor(bgColor: string): string {
   if (bgColor === 'transparent') return 'rgba(0,0,0,0.06)'
@@ -104,8 +145,9 @@ function CanvasSkeleton({
 
 /* ── App ─────────────────────────────────────────────────────────── */
 export default function App() {
-  const [workspaces,         setWorkspaces]         = useState<Workspace[]>([makeInitWorkspace()])
-  const [activeWorkspaceId,  setActiveWorkspaceId]  = useState<string>(INIT_WS_ID)
+  const _init = loadWorkspaces()
+  const [workspaces,         setWorkspaces]         = useState<Workspace[]>(_init.workspaces)
+  const [activeWorkspaceId,  setActiveWorkspaceId]  = useState<string>(_init.activeWorkspaceId)
   const [tilt,               setTilt]               = useState({ x: 0, y: 0 })
   const [altHeld,            setAltHeld]            = useState(false)
   const [pendingOrientation, setPendingOrientation] = useState<Orientation | null>(null)
@@ -177,6 +219,12 @@ export default function App() {
   useEffect(() => { settingsRef.current   = settings        }, [settings])
   useEffect(() => { activeWsRef.current   = activeWorkspace }, [activeWorkspace])
   useEffect(() => { activeWsIdRef.current = activeWorkspaceId }, [activeWorkspaceId])
+
+  /* ── Persist workspaces to localStorage (debounced 400ms) ── */
+  useEffect(() => {
+    const t = setTimeout(() => saveWorkspaces(workspaces, activeWorkspaceId), 400)
+    return () => clearTimeout(t)
+  }, [workspaces, activeWorkspaceId])
 
   /* ── Helper: mutate only the active workspace ── */
   const patchWs = useCallback((fn: (ws: Workspace) => Workspace) => {
@@ -327,6 +375,7 @@ export default function App() {
 
   /* ── Full restart ── */
   const handleRestart = useCallback(() => {
+    clearWorkspaces()
     setWorkspaces([makeInitWorkspace()])
     setActiveWorkspaceId(INIT_WS_ID)
   }, [])
