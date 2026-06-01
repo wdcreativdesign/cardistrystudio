@@ -259,6 +259,13 @@ export default function App() {
     update({ rotX: pose.rotX, rotY: pose.rotY, rotZ: pose.rotZ, zoom: pose.zoom, posX: pose.posX, posY: pose.posY, posZ: pose.posZ, autoRotate: pose.autoRotate })
   }, [update])
 
+  /* ── Bloquer clic droit (protection contre save-image) ── */
+  useEffect(() => {
+    const block = (e: MouseEvent) => e.preventDefault()
+    document.addEventListener('contextmenu', block)
+    return () => document.removeEventListener('contextmenu', block)
+  }, [])
+
   /* ── Alt key tracking ── */
   useEffect(() => {
     const down = (e: KeyboardEvent) => { if (e.key === 'Alt') { e.preventDefault(); setAltHeld(true) } }
@@ -706,6 +713,7 @@ export default function App() {
           onPointerDown={onPointerDown}
           onPointerMove={onPointerMove}
           onPointerUp={onPointerUp}
+          onContextMenu={(e) => e.preventDefault()}
           onPointerCancel={onPointerUp}
           onMouseLeave={onMouseLeave}
         >
