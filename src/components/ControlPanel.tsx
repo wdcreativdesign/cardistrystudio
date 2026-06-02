@@ -571,7 +571,7 @@ export function ControlPanel({ settings, displayCount, onChange, onReset, onRand
   const [tab, setTab] = useState<'create' | 'export'>('create')
 
   return (
-    <aside className="flex flex-col w-[280px] min-w-[280px] h-screen bg-[#141414] border-l border-white/[0.06]">
+    <aside className="flex flex-col w-[280px] min-w-[280px] h-screen bg-[#111] border-l border-[#242424]">
 
       {/* ── Navigation ── */}
       <div className="h-[72px] flex items-center px-4 border-b border-white/[0.06]">
