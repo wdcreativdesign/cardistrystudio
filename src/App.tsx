@@ -15,6 +15,7 @@ import { randomizePoses } from './lib/randomize'
 import { supabase } from './lib/supabase'
 import { useCredits, EXPORT_COST } from './hooks/useCredits'
 import { trackExport, trackOpenBuyCredits, trackPurchase, trackSignOut } from './lib/analytics'
+import { DEFAULT_FRONT_URL } from './constants'
 
 /* ── Default card settings ───────────────────────────────────────── */
 const DEFAULT_SETTINGS: CardSettings = {
@@ -28,7 +29,7 @@ const DEFAULT_SETTINGS: CardSettings = {
   finish: 'metallic',
   orientation: 'horizontal',
   edgeColor: '#9AE600',
-  frontImage: null,
+  frontImage: DEFAULT_FRONT_URL,
   backImage: null,
   autoRotate: false,
   lightIntensity: 1.15,
@@ -370,7 +371,7 @@ export default function App() {
     const ws = workspaces[0]
     if (ws.pages.length !== 1 || ws.displayCount !== 1) return false
     const s = ws.pages[0].settings
-    if (s.frontImage || s.backImage) return false
+    if ((s.frontImage && s.frontImage !== DEFAULT_FRONT_URL) || s.backImage) return false
     const keys = [
       'rotX','rotY','rotZ','zoom','posX','posY','posZ',
       'finish','orientation','edgeColor','autoRotate','lightIntensity','bgColor',

@@ -2,6 +2,7 @@ import React from 'react'
 import { Icon } from '@/components/ui/icon'
 import { cn } from '@/lib/utils'
 import { type Workspace, type SavedPose, type CardSettings } from '@/types'
+import { DEFAULT_FRONT_URL } from '@/constants'
 
 const CARD_RATIO = 85.6 / 54
 
@@ -68,7 +69,7 @@ function WorkspaceThumb({
             {Array.from({ length: count }).map((_, i) => {
               const page = workspace.pages[i]
               const edgeColor = page?.settings.edgeColor ?? '#9AE600'
-              const hasImg    = !!page?.settings.frontImage
+              const hasImg    = !!page?.settings.frontImage && page.settings.frontImage !== DEFAULT_FRONT_URL
               return (
                 <div
                   key={i}

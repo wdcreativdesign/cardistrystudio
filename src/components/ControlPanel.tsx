@@ -4,6 +4,7 @@ import { Switch } from '@/components/ui/switch'
 import { cn } from '@/lib/utils'
 import { Icon } from '@/components/ui/icon'
 import { type CardSettings, type CameraMode, type Finish } from '@/types'
+import { DEFAULT_FRONT_URL } from '@/constants'
 
 /* ─── Helpers ──────────────────────────────────────────────────── */
 function fmt(v: number, unit = '°') {
@@ -185,7 +186,7 @@ function DropZone({ label, image, onLoad }: {
       onDrop={handleDrop}
       onDragOver={(e) => e.preventDefault()}
     >
-      {image ? (
+      {image && image !== DEFAULT_FRONT_URL ? (
         <>
           <img src={image} alt={label} className="absolute inset-0 w-full h-full object-cover" />
           <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/60 opacity-0 hover:opacity-100 transition-opacity rounded-xl gap-1">
