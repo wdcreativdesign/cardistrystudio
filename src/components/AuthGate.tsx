@@ -24,7 +24,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
 
   if (loading) {
     return (
-      <div className="flex h-screen w-screen items-center justify-center bg-[#f0f0f5]">
+      <div className="flex h-screen w-screen items-center justify-center bg-[#1d1d1d]">
         <div className="text-black/30 text-[13px]">Loading…</div>
       </div>
     )

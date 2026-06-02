@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { X } from 'lucide-react'
+import { Icon } from '@/components/ui/icon'
 import { supabase } from '@/lib/supabase'
 
 function GoogleIcon() {
@@ -61,15 +61,15 @@ export function LoginModal({ onClose, reason }: LoginModalProps) {
       />
 
       {/* Modal */}
-      <div className="relative bg-white rounded-2xl shadow-2xl border border-black/[0.07] w-[360px] mx-4 animate-in fade-in zoom-in-95 duration-150">
+      <div className="relative bg-[#1a1a1a] rounded-2xl shadow-2xl border border-white/[0.07] w-[360px] mx-4 animate-in fade-in zoom-in-95 duration-150">
 
         {/* Header */}
         <div className="flex items-start justify-between px-6 pt-6 pb-5">
           <div>
-            <h2 className="text-[15px] font-semibold text-black/85">
+            <h2 className="text-[15px] font-semibold text-white/85">
               {reason === 'export' ? 'Sign in to export' : 'Sign in'}
             </h2>
-            <p className="text-[12px] text-black/35 mt-0.5">
+            <p className="text-[12px] text-white/35 mt-0.5">
               {reason === 'export'
                 ? 'Create a free account to download your card'
                 : 'No password needed'}
@@ -77,17 +77,17 @@ export function LoginModal({ onClose, reason }: LoginModalProps) {
           </div>
           <button
             onClick={onClose}
-            className="text-black/25 hover:text-black/50 transition-colors mt-0.5"
+            className="text-white/25 hover:text-white/60 transition-colors mt-0.5"
           >
-            <X className="w-4 h-4" />
+            <Icon name="close" size={18} />
           </button>
         </div>
 
         {/* Free credits banner */}
-        <div className="mx-6 mb-4 flex items-center gap-2.5 bg-amber-50 border border-amber-100 rounded-xl px-3.5 py-2.5">
+        <div className="mx-6 mb-4 flex items-center gap-2.5 bg-[#9AE600]/10 border border-[#9AE600]/20 rounded-xl px-3.5 py-2.5">
           <span className="text-[15px]">🎁</span>
-          <p className="text-[11.5px] text-amber-700/80 leading-snug">
-            <span className="font-semibold text-amber-800">15 free credits</span> on your first sign-up — no card required.
+          <p className="text-[11.5px] text-[#9AE600]/80 leading-snug">
+            <span className="font-semibold text-[#9AE600]">15 free credits</span> on your first sign-up — no card required.
           </p>
         </div>
 
@@ -95,19 +95,19 @@ export function LoginModal({ onClose, reason }: LoginModalProps) {
         <div className="px-6 pb-6">
           {sent ? (
             <div className="text-center py-4">
-              <div className="w-12 h-12 rounded-2xl bg-black/[0.04] flex items-center justify-center mx-auto mb-4">
-                <svg className="w-5 h-5 text-black/40" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+              <div className="w-12 h-12 rounded-2xl bg-white/[0.04] flex items-center justify-center mx-auto mb-4">
+                <svg className="w-5 h-5 text-white/40" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
                 </svg>
               </div>
-              <h3 className="text-[14px] font-semibold text-black/80 mb-1">Check your inbox</h3>
-              <p className="text-[12px] text-black/45 leading-relaxed">
+              <h3 className="text-[14px] font-semibold text-white/80 mb-1">Check your inbox</h3>
+              <p className="text-[12px] text-white/45 leading-relaxed">
                 Magic link sent to<br />
-                <span className="font-medium text-black/65">{email}</span>
+                <span className="font-medium text-white/65">{email}</span>
               </p>
               <button
                 onClick={() => { setSent(false); setEmail('') }}
-                className="mt-4 text-[11px] text-black/30 hover:text-black/55 transition-colors underline"
+                className="mt-4 text-[11px] text-white/30 hover:text-white/55 transition-colors underline"
               >
                 Use a different email
               </button>
@@ -118,10 +118,10 @@ export function LoginModal({ onClose, reason }: LoginModalProps) {
               <button
                 onClick={handleGoogle}
                 disabled={loading !== null}
-                className="w-full flex items-center justify-center gap-2.5 border border-black/10 bg-white hover:bg-black/[0.025] rounded-xl py-2.5 text-[13px] font-medium text-black/65 transition-all disabled:opacity-50 active:scale-[0.99]"
+                className="w-full flex items-center justify-center gap-2.5 border border-white/10 bg-white/[0.04] hover:bg-white/[0.07] rounded-xl py-2.5 text-[13px] font-medium text-white/65 transition-all disabled:opacity-50 active:scale-[0.99]"
               >
                 {loading === 'google'
-                  ? <span className="animate-spin text-[10px] text-black/30">◌</span>
+                  ? <span className="animate-spin text-[10px] text-white/30">◌</span>
                   : <GoogleIcon />
                 }
                 Continue with Google
@@ -129,9 +129,9 @@ export function LoginModal({ onClose, reason }: LoginModalProps) {
 
               {/* Divider */}
               <div className="flex items-center gap-3 py-0.5">
-                <div className="flex-1 h-px bg-black/[0.07]" />
-                <span className="text-[11px] text-black/20">or</span>
-                <div className="flex-1 h-px bg-black/[0.07]" />
+                <div className="flex-1 h-px bg-white/[0.07]" />
+                <span className="text-[11px] text-white/20">or</span>
+                <div className="flex-1 h-px bg-white/[0.07]" />
               </div>
 
               {/* Magic link */}
@@ -141,13 +141,13 @@ export function LoginModal({ onClose, reason }: LoginModalProps) {
                   placeholder="your@email.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full text-[13px] px-3.5 py-2.5 rounded-xl border border-black/10 bg-black/[0.02] focus:outline-none focus:border-black/25 focus:bg-white transition-all placeholder:text-black/25"
+                  className="w-full text-[13px] px-3.5 py-2.5 rounded-xl border border-white/10 bg-white/[0.02] focus:outline-none focus:border-white/25 focus:bg-white/[0.06] transition-all placeholder:text-white/25"
                   required
                 />
                 <button
                   type="submit"
                   disabled={loading !== null || !email}
-                  className="w-full bg-[#1a1a1a] hover:bg-[#2d2d2d] text-white text-[13px] font-medium py-2.5 rounded-xl transition-all disabled:opacity-40 active:scale-[0.99]"
+                  className="w-full bg-[#9AE600] hover:bg-[#aaff00] text-[#0d0d0d] text-[13px] font-medium py-2.5 rounded-full transition-all disabled:opacity-40 active:scale-[0.99]"
                 >
                   {loading === 'magic' ? 'Sending…' : 'Send magic link'}
                 </button>
