@@ -1,4 +1,4 @@
-import { useRef } from 'react'
+import React from 'react'
 import { Icon } from '@/components/ui/icon'
 import { cn } from '@/lib/utils'
 import { type Workspace, type SavedPose, type CardSettings } from '@/types'
@@ -129,6 +129,7 @@ interface LeftPanelProps {
 export function LeftPanel({
   workspaces, activeWorkspaceId, onSelect, onAdd, onDelete,
 }: LeftPanelProps) {
+
   return (
     <div
       className={cn(
@@ -160,7 +161,7 @@ export function LeftPanel({
       {/* Divider */}
       <div className="w-full h-px bg-[#242424]" />
 
-      {/* ── Add workspace button — same style as bottom bar icon buttons ── */}
+      {/* ── Add workspace button ── */}
       <button
         onClick={onAdd}
         title="New workspace"
@@ -168,6 +169,8 @@ export function LeftPanel({
       >
         <Icon name="add" size={20} />
       </button>
+
+
     </div>
   )
 }

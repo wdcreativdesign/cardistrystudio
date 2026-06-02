@@ -854,17 +854,11 @@ export default function App() {
           onChange={handleChange}
           displayCount={displayCount}
           onDisplayCountChange={handleDisplayCountChange}
-          onSavePose={() => {
-            const pose = {
-              id: Math.random().toString(36).slice(2, 9),
-              name: `Pose ${savedPoses.length + 1}`,
-              rotX: settings.rotX, rotY: settings.rotY, rotZ: settings.rotZ,
-              zoom: settings.zoom,
-              posX: settings.posX, posY: settings.posY, posZ: settings.posZ,
-              autoRotate: settings.autoRotate,
-            }
-            handleSavePose(pose)
-          }}
+          savedPoses={savedPoses}
+          onSavePose={handleSavePose}
+          onApplyPose={handleApplyPose}
+          onDeletePose={handleDeletePose}
+          onRenamePose={handleRenamePose}
         />
       </div>
 

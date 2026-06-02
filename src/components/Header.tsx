@@ -100,7 +100,7 @@ export function Header({
         )}
       <div ref={menuRef} className="relative">
         <button
-          onClick={() => setMenuOpen((o) => !o)}
+          onClick={() => hasAvatar ? setMenuOpen((o) => !o) : onSignIn?.()}
           title={hasAvatar ? 'Profile' : 'Sign in'}
           className={cn(
             'w-10 h-10 rounded-full flex items-center justify-center text-[13px] font-semibold transition-all active:scale-[0.95]',

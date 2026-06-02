@@ -180,8 +180,7 @@ function DropZone({ label, image, onLoad }: {
 
   return (
     <div
-      className="relative flex flex-col items-center justify-center gap-1.5 rounded-xl border border-dashed border-white/[0.1] bg-white/[0.025] hover:bg-white/[0.04] hover:border-white/[0.18] transition-all cursor-pointer overflow-hidden"
-      style={{ height: 90 }}
+      className="relative flex flex-col items-center justify-center gap-1 rounded-[8px] border border-dashed border-[#242424] bg-white/[0.04] hover:bg-white/[0.06] hover:border-white/20 transition-all cursor-pointer overflow-hidden py-4 px-2"
       onClick={() => inputRef.current?.click()}
       onDrop={handleDrop}
       onDragOver={(e) => e.preventDefault()}

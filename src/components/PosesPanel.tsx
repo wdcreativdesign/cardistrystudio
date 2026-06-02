@@ -1,89 +1,7 @@
-import { useState, useRef, useEffect } from 'react'
+import { useRef, useEffect, useState } from 'react' // useState used by PoseRow
 import { Icon } from '@/components/ui/icon'
-import { cn } from '@/lib/utils'
 import { type SavedPose, type CardSettings } from '@/types'
 
-/* ── Pose row ────────────────────────────────────────────────────── */
-function PoseRow({
-  pose,
-  onApply,
-  onDelete,
-  onRename,
-}: {
-  pose:     SavedPose
-  onApply:  () => void
-  onDelete: () => void
-  onRename: (name: string) => void
-}) {
-  const [editing,  setEditing]  = useState(false)
-  const [draft,    setDraft]    = useState(pose.name)
-  const inputRef = useRef<HTMLInputElement>(null)
-
-  useEffect(() => { if (editing) inputRef.current?.select() }, [editing])
-
-  function commit() {
-    const trimmed = draft.trim()
-    if (trimmed) onRename(trimmed)
-    else setDraft(pose.name)
-    setEditing(false)
-  }
-
-  return (
-    <div className="group flex items-center gap-2 px-2 py-1.5 rounded-xl hover:bg-white/[0.04] transition-colors">
-      {/* Name / inline edit */}
-      <div className="flex-1 min-w-0">
-        {editing ? (
-          <input
-            ref={inputRef}
-            value={draft}
-            onChange={(e) => setDraft(e.target.value)}
-            onBlur={commit}
-            onKeyDown={(e) => { if (e.key === 'Enter') commit(); if (e.key === 'Escape') { setDraft(pose.name); setEditing(false) } }}
-            className="w-full text-[12px] font-medium text-white/80 bg-transparent outline-none border-b border-white/20 pb-px"
-          />
-        ) : (
-          <button
-            onClick={() => { setDraft(pose.name); setEditing(true) }}
-            className="text-left w-full"
-          >
-            <p className="text-[12px] font-medium text-white/75 truncate leading-none">{pose.name}</p>
-            <p className="text-[10px] text-white/25 mt-0.5 tabular-nums">
-              X{pose.rotX}° Y{pose.rotY}° Z{pose.rotZ}°
-            </p>
-          </button>
-        )}
-      </div>
-
-      {/* Actions */}
-      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
-        {editing ? (
-          <button onClick={commit} className="p-1 rounded-lg text-emerald-400 hover:bg-emerald-500/10 transition-colors">
-            <Icon name="check" size={16} />
-          </button>
-        ) : (
-          <>
-            <button
-              onClick={onApply}
-              title="Apply pose"
-              className="p-1 rounded-lg text-white/35 hover:text-white/70 hover:bg-white/[0.06] transition-colors"
-            >
-              <Icon name="replay" size={16} />
-            </button>
-            <button
-              onClick={onDelete}
-              title="Delete"
-              className="p-1 rounded-lg text-white/25 hover:text-red-500 hover:bg-red-50 transition-colors"
-            >
-              <Icon name="delete" size={16} />
-            </button>
-          </>
-        )}
-      </div>
-    </div>
-  )
-}
-
-/* ── PosesPanel ──────────────────────────────────────────────────── */
 interface PosesPanelProps {
   savedPoses:      SavedPose[]
   currentSettings: CardSettings
@@ -93,6 +11,74 @@ interface PosesPanelProps {
   onRename:        (id: string, name: string) => void
   onClose:         () => void
   anchorRef:       React.RefObject<HTMLButtonElement | null>
+}
+
+function PoseRow({ pose, onApply, onDelete, onRename }: {
+  pose:     SavedPose
+  onApply:  () => void
+  onDelete: () => void
+  onRename: (name: string) => void
+}) {
+  const [editing, setEditing] = useState(false)
+  const [draft,   setDraft]   = useState(pose.name)
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    if (editing) { inputRef.current?.focus(); inputRef.current?.select() }
+  }, [editing])
+
+  function commit() {
+    const trimmed = draft.trim()
+    if (trimmed && trimmed !== pose.name) onRename(trimmed)
+    else setDraft(pose.name)
+    setEditing(false)
+  }
+
+  return (
+    <div className="flex items-center gap-2 p-2 rounded-[8px] text-white hover:bg-white/[0.04] transition-colors group">
+      {editing ? (
+        <input
+          ref={inputRef}
+          type="text"
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          onBlur={commit}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter')  { e.preventDefault(); commit() }
+            if (e.key === 'Escape') { setDraft(pose.name); setEditing(false) }
+          }}
+          className="flex-1 text-[12px] font-medium text-white text-left bg-[#242424] h-6 rounded-[4px] px-1 focus:outline-none focus:border focus:border-[#9ae600] min-w-0"
+          onClick={(e) => e.stopPropagation()}
+        />
+      ) : (
+        <button
+          type="button"
+          onClick={onApply}
+          className="flex-1 text-[14px] font-medium text-left truncate min-w-0"
+        >
+          {pose.name}
+        </button>
+      )}
+
+      {!editing && (
+        <button
+          type="button"
+          onClick={(e) => { e.stopPropagation(); setEditing(true) }}
+          className="text-white/40 hover:text-white transition-colors flex-shrink-0"
+        >
+          <Icon name="edit" size={16} />
+        </button>
+      )}
+
+      <button
+        type="button"
+        onClick={(e) => { e.stopPropagation(); onDelete() }}
+        className="text-white/40 hover:text-red-400 transition-colors flex-shrink-0"
+      >
+        <Icon name="delete" size={16} />
+      </button>
+    </div>
+  )
 }
 
 export function PosesPanel({
@@ -107,7 +93,6 @@ export function PosesPanel({
 }: PosesPanelProps) {
   const panelRef = useRef<HTMLDivElement>(null)
 
-  /* Close on outside click */
   useEffect(() => {
     function handler(e: MouseEvent) {
       if (
@@ -119,18 +104,18 @@ export function PosesPanel({
     return () => document.removeEventListener('mousedown', handler)
   }, [onClose, anchorRef])
 
-  function handleSaveCurrent() {
+  function handleSave() {
     const pose: SavedPose = {
       id:         Math.random().toString(36).slice(2, 9),
       name:       `Pose ${savedPoses.length + 1}`,
-      rotX:       currentSettings.rotX,
-      rotY:       currentSettings.rotY,
-      rotZ:       currentSettings.rotZ,
-      zoom:       currentSettings.zoom,
-      posX:       currentSettings.posX,
-      posY:       currentSettings.posY,
-      posZ:       currentSettings.posZ,
-      autoRotate: currentSettings.autoRotate,
+      rotX:       currentSettings.rotX ?? 0,
+      rotY:       currentSettings.rotY ?? 0,
+      rotZ:       currentSettings.rotZ ?? 0,
+      zoom:       currentSettings.zoom  ?? 1,
+      posX:       currentSettings.posX  ?? 0,
+      posY:       currentSettings.posY  ?? 0,
+      posZ:       currentSettings.posZ  ?? 0,
+      autoRotate: currentSettings.autoRotate ?? false,
     }
     onSave(pose)
   }
@@ -138,40 +123,40 @@ export function PosesPanel({
   return (
     <div
       ref={panelRef}
-      className={cn(
-        'absolute left-full ml-3 top-0 z-50',
-        'w-[220px]',
-        'bg-[#1e1e1e]/95 backdrop-blur-xl',
-        'rounded-2xl border border-white/[0.07]',
-        'shadow-[0_12px_40px_-8px_rgba(0,0,0,0.18),0_4px_12px_-4px_rgba(0,0,0,0.08)]',
-        'p-2',
-        'animate-in fade-in slide-in-from-top-2 duration-150',
-      )}
+      className="w-[240px] bg-[#111] border border-[#242424] rounded-[24px] drop-shadow-[0px_8px_12px_rgba(0,0,0,0.32)] animate-in fade-in zoom-in-95 duration-150 origin-bottom-right"
     >
-      {/* Header */}
-      <div className="px-2 py-1.5 mb-1">
-        <p className="text-[11px] font-semibold text-white/40 uppercase tracking-wide">Saved Poses</p>
-      </div>
+      <div className="flex flex-col gap-2 p-4">
 
-      {/* List */}
-      {savedPoses.length === 0 ? (
-        <div className="px-2 py-4 text-center">
-          <p className="text-[11px] text-white/25">No saved poses yet</p>
-          <p className="text-[10px] text-white/18 mt-0.5">Save your current rotation above</p>
+        {/* Label */}
+        <div className="flex items-center">
+          <span className="text-[12px] font-medium text-[#999]">Saved poses</span>
         </div>
-      ) : (
-        <div className="space-y-0.5 max-h-[280px] overflow-y-auto" style={{ scrollbarWidth: 'none' }}>
-          {savedPoses.map((pose) => (
-            <PoseRow
-              key={pose.id}
-              pose={pose}
-              onApply={() => { onApply(pose); onClose() }}
-              onDelete={() => onDelete(pose.id)}
-              onRename={(name) => onRename(pose.id, name)}
-            />
-          ))}
-        </div>
-      )}
+
+        {/* Pose list */}
+        {savedPoses.length > 0 && (
+          <div className="flex flex-col">
+            {savedPoses.map((pose) => (
+              <PoseRow
+                key={pose.id}
+                pose={pose}
+                onApply={() => { onApply(pose); onClose() }}
+                onDelete={() => onDelete(pose.id)}
+                onRename={(name) => onRename(pose.id, name)}
+              />
+            ))}
+          </div>
+        )}
+
+        {/* Save CTA */}
+        <button
+          type="button"
+          onClick={(e) => { e.stopPropagation(); handleSave() }}
+          className="w-full h-[41px] rounded-full text-[16px] font-medium bg-[#242424] hover:bg-[#2e2e2e] text-white transition-all active:scale-[0.98]"
+        >
+          Save current pose
+        </button>
+
+      </div>
     </div>
   )
 }
