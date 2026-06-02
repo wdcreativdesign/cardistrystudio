@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback, useEffect, useMemo } from 'react'
 import * as THREE from 'three'
-import { AlertTriangle, CheckCircle } from 'lucide-react'
+import { Icon } from '@/components/ui/icon'
 import { type User } from '@supabase/supabase-js'
 import { CardScene } from './components/CardScene'
 import { ControlPanel } from './components/ControlPanel'
@@ -27,12 +27,12 @@ const DEFAULT_SETTINGS: CardSettings = {
   posZ: 0,
   finish: 'metallic',
   orientation: 'horizontal',
-  edgeColor: '#009FFF',
+  edgeColor: '#9AE600',
   frontImage: null,
   backImage: null,
   autoRotate: false,
   lightIntensity: 1.15,
-  bgColor: '#f0f0f5',
+  bgColor: '#1d1d1d',
   cameraFov:  42,
   cameraMode: 'perspective',
 }
@@ -49,6 +49,18 @@ const CAM_FOV_TAN = Math.tan((42 / 2) * (Math.PI / 180))
 const INIT_PAGE_ID = 'page-init'
 const INIT_WS_ID   = 'ws-init'
 
+async function loadDefaultCardImage(): Promise<string | null> {
+  try {
+    const res = await fetch('/default-card.png')
+    const blob = await res.blob()
+    return new Promise((resolve) => {
+      const reader = new FileReader()
+      reader.onload = (e) => resolve(e.target?.result as string ?? null)
+      reader.readAsDataURL(blob)
+    })
+  } catch { return null }
+}
+
 function makeInitWorkspace(): Workspace {
   const page: CardPage = { id: INIT_PAGE_ID, name: 'Card 1', settings: { ...DEFAULT_SETTINGS } }
   return { id: INIT_WS_ID, name: 'Workspace 1', displayCount: 1, pages: [page], activePageId: INIT_PAGE_ID }
@@ -60,12 +72,27 @@ function makeId() { return Math.random().toString(36).slice(2, 9) }
 const LS_WORKSPACES = 'cs-workspaces'
 const LS_ACTIVE_WS  = 'cs-active-ws'
 
+/* Migre les vieilles valeurs par défaut vers les nouvelles */
+function migrateWorkspaces(workspaces: Workspace[]): Workspace[] {
+  return workspaces.map((ws) => ({
+    ...ws,
+    pages: ws.pages.map((p) => ({
+      ...p,
+      settings: {
+        ...p.settings,
+        bgColor:   p.settings.bgColor   === '#f0f0f5' ? '#1d1d1d' : p.settings.bgColor,
+        edgeColor: p.settings.edgeColor === '#009FFF' ? '#9AE600' : p.settings.edgeColor,
+      },
+    })),
+  }))
+}
+
 function loadWorkspaces(): { workspaces: Workspace[]; activeWorkspaceId: string } {
   try {
     const raw = localStorage.getItem(LS_WORKSPACES)
     const id  = localStorage.getItem(LS_ACTIVE_WS)
     if (raw) {
-      const workspaces: Workspace[] = JSON.parse(raw)
+      const workspaces: Workspace[] = migrateWorkspaces(JSON.parse(raw))
       return { workspaces, activeWorkspaceId: id ?? workspaces[0]?.id ?? INIT_WS_ID }
     }
   } catch { /* ignore */ }
@@ -166,6 +193,7 @@ export default function App() {
     setSceneReady(true)
     setTimeout(() => setSkeletonGone(true), 650)
   }, [])
+
 
   /* ── Current user ── */
   const [currentUser, setCurrentUser] = useState<User | null>(null)
@@ -740,14 +768,8 @@ export default function App() {
 
   /* ── Render ── */
   return (
-    <div
-      className="flex h-screen w-screen overflow-hidden"
-      style={{
-        background: settings.bgColor === 'transparent'
-          ? 'repeating-conic-gradient(#d8d8d8 0% 25%, #f0f0f0 0% 50%) 0 0 / 20px 20px'
-          : settings.bgColor,
-      }}
-    >
+    <div className="flex h-screen w-screen overflow-hidden bg-[#141414]">
+
       {/* ── Left panel — workspaces ── */}
       <LeftPanel
         workspaces={workspaces}
@@ -763,63 +785,86 @@ export default function App() {
         onRenamePose={handleRenamePose}
       />
 
-      {/* ── Canvas area ── */}
-      <div className="flex-1 relative min-w-0">
+      {/* ── Canvas column (header + viewport) ── */}
+      <div className="flex-1 flex flex-col min-w-0">
 
-        {/* ── Skeleton — visible until first Three.js frame ── */}
-        {!skeletonGone && (
-          <CanvasSkeleton
-            bgColor={settings.bgColor}
-            isVertical={settings.orientation === 'vertical'}
-            ready={sceneReady}
-          />
-        )}
-
+        {/* ── Header bar ── */}
         <Header
           onRestart={handleRestart}
+          onReset={handleReset}
           onLogoClick={handleLogoClick}
-          logoColor={contrastColor(settings.bgColor)}
           credits={displayCredits}
           onBuyCredits={() => setShowBuyCredits(true)}
           onSignIn={() => setShowLoginModal(true)}
           userEmail={currentUser?.email ?? null}
         />
 
+        {/* ── Canvas viewport ── */}
         <div
-          ref={containerRef}
-          className={`absolute inset-0 select-none ${altHeld ? 'cursor-move' : 'canvas-drag'}`}
-          onPointerDown={onPointerDown}
-          onPointerMove={onPointerMove}
-          onPointerUp={onPointerUp}
-          onContextMenu={(e) => e.preventDefault()}
-          onPointerCancel={onPointerUp}
-          onMouseLeave={onMouseLeave}
+          className="flex-1 relative min-w-0"
+          style={{
+            background: settings.bgColor === 'transparent'
+              ? 'repeating-conic-gradient(#2a2a2a 0% 25%, #222 0% 50%) 0 0 / 20px 20px'
+              : settings.bgColor,
+          }}
         >
-          <CardScene
-            displayedPages={displayedPages}
-            displayCount={displayCount}
-            tilt={tilt}
-            glRef={glRef}
-            sceneRef={sceneRef}
-            cameraRef={cameraRef}
-            onReady={handleSceneReady}
-          />
+          {/* Skeleton */}
+          {!skeletonGone && (
+            <CanvasSkeleton
+              bgColor={settings.bgColor}
+              isVertical={settings.orientation === 'vertical'}
+              ready={sceneReady}
+            />
+          )}
+
+          <div
+            ref={containerRef}
+            className={`absolute inset-0 select-none ${altHeld ? 'cursor-move' : 'canvas-drag'}`}
+            onPointerDown={onPointerDown}
+            onPointerMove={onPointerMove}
+            onPointerUp={onPointerUp}
+            onContextMenu={(e) => e.preventDefault()}
+            onPointerCancel={onPointerUp}
+            onMouseLeave={onMouseLeave}
+          >
+            <CardScene
+              displayedPages={displayedPages}
+              displayCount={displayCount}
+              tilt={tilt}
+              glRef={glRef}
+              sceneRef={sceneRef}
+              cameraRef={cameraRef}
+              onReady={handleSceneReady}
+            />
+          </div>
+
+          {displayCount > 1 && (
+            <div className={`absolute top-4 left-1/2 -translate-x-1/2 z-10 transition-all duration-200 pointer-events-none ${altHeld ? 'opacity-100' : 'opacity-30 hover:opacity-60'}`}>
+              <div className="flex items-center gap-1.5 bg-black/70 backdrop-blur-sm text-white/90 text-[11px] font-medium px-3 py-1.5 rounded-full">
+                <span className="bg-white/20 rounded px-1.5 py-0.5 text-[10px] font-mono">⌥ Alt</span>
+                <span>+ drag to move</span>
+              </div>
+            </div>
+          )}
         </div>
 
-        {displayCount > 1 && (
-          <div className={`absolute top-16 left-1/2 -translate-x-1/2 z-10 transition-all duration-200 pointer-events-none ${altHeld ? 'opacity-100' : 'opacity-30 hover:opacity-60'}`}>
-            <div className="flex items-center gap-1.5 bg-black/70 backdrop-blur-sm text-white/90 text-[11px] font-medium px-3 py-1.5 rounded-full">
-              <span className="bg-white/20 rounded px-1.5 py-0.5 text-[10px] font-mono">⌥ Alt</span>
-              <span>+ drag to move</span>
-            </div>
-          </div>
-        )}
-
+        {/* ── Bottom bar — barre fixe sous le canvas ── */}
         <BottomBar
           settings={settings}
           onChange={handleChange}
           displayCount={displayCount}
           onDisplayCountChange={handleDisplayCountChange}
+          onSavePose={() => {
+            const pose = {
+              id: Math.random().toString(36).slice(2, 9),
+              name: `Pose ${savedPoses.length + 1}`,
+              rotX: settings.rotX, rotY: settings.rotY, rotZ: settings.rotZ,
+              zoom: settings.zoom,
+              posX: settings.posX, posY: settings.posY, posZ: settings.posZ,
+              autoRotate: settings.autoRotate,
+            }
+            handleSavePose(pose)
+          }}
         />
       </div>
 
@@ -837,20 +882,20 @@ export default function App() {
       {/* ── Reload confirm dialog ── */}
       {showReloadConfirm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <div className="absolute inset-0 bg-black/25 backdrop-blur-[2px]" onClick={() => setShowReloadConfirm(false)} />
-          <div className="relative bg-white rounded-2xl shadow-2xl border border-black/[0.07] p-6 w-[360px] mx-4 animate-in fade-in zoom-in-95 duration-150">
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-[2px]" onClick={() => setShowReloadConfirm(false)} />
+          <div className="relative bg-[#1a1a1a] rounded-2xl shadow-2xl border border-white/[0.07] p-6 w-[360px] mx-4 animate-in fade-in zoom-in-95 duration-150">
             <div className="flex items-start gap-3.5 mb-5">
-              <div className="w-9 h-9 rounded-xl bg-amber-50 flex items-center justify-center flex-shrink-0 mt-0.5">
-                <AlertTriangle style={{ width: 18, height: 18 }} className="text-amber-500" />
+              <div className="w-9 h-9 rounded-xl bg-[#9AE600]/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+                <Icon name="warning" size={20} className="text-[#9AE600]" />
               </div>
               <div>
-                <h3 className="text-[15px] font-semibold text-black/85 mb-1.5">Lose your progress?</h3>
-                <p className="text-[13px] text-black/50 leading-relaxed">Refreshing will reset your current design. Any unsaved work will be lost.</p>
+                <h3 className="text-[15px] font-semibold text-white/85 mb-1.5">Lose your progress?</h3>
+                <p className="text-[13px] text-white/50 leading-relaxed">Refreshing will reset your current design. Any unsaved work will be lost.</p>
               </div>
             </div>
             <div className="flex gap-2.5 justify-end">
-              <button onClick={() => setShowReloadConfirm(false)} className="px-4 py-2 rounded-xl text-[13px] font-medium text-black/55 hover:text-black/80 border border-black/10 hover:bg-black/[0.04] transition-all">Keep editing</button>
-              <button onClick={() => window.location.reload()} className="px-4 py-2 rounded-xl text-[13px] font-medium bg-[#1a1a1a] hover:bg-[#2d2d2d] text-white transition-all active:scale-[0.97]">Refresh anyway</button>
+              <button onClick={() => setShowReloadConfirm(false)} className="px-4 py-2 rounded-full text-[13px] font-medium text-white/55 hover:text-white/80 bg-[#252525] hover:bg-[#2e2e2e] border border-white/[0.08] transition-all">Keep editing</button>
+              <button onClick={() => window.location.reload()} className="px-4 py-2 rounded-full text-[13px] font-medium bg-[#9AE600] hover:bg-[#aaff00] text-[#0d0d0d] transition-all rounded-full active:scale-[0.97]">Refresh anyway</button>
             </div>
           </div>
         </div>
@@ -859,24 +904,24 @@ export default function App() {
       {/* ── Orientation warning dialog ── */}
       {pendingOrientation && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <div className="absolute inset-0 bg-black/25 backdrop-blur-[2px]" onClick={cancelOrientationChange} />
-          <div className="relative bg-white rounded-2xl shadow-2xl border border-black/[0.07] p-6 w-[360px] mx-4 animate-in fade-in zoom-in-95 duration-150">
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-[2px]" onClick={cancelOrientationChange} />
+          <div className="relative bg-[#1a1a1a] rounded-2xl shadow-2xl border border-white/[0.07] p-6 w-[360px] mx-4 animate-in fade-in zoom-in-95 duration-150">
             <div className="flex items-start gap-3.5 mb-5">
-              <div className="w-9 h-9 rounded-xl bg-amber-50 flex items-center justify-center flex-shrink-0 mt-0.5">
-                <AlertTriangle style={{ width: 18, height: 18 }} className="text-amber-500" />
+              <div className="w-9 h-9 rounded-xl bg-[#9AE600]/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+                <Icon name="warning" size={20} className="text-[#9AE600]" />
               </div>
               <div>
-                <h3 className="text-[15px] font-semibold text-black/85 mb-1.5">Change orientation?</h3>
-                <p className="text-[13px] text-black/50 leading-relaxed">
+                <h3 className="text-[15px] font-semibold text-white/85 mb-1.5">Change orientation?</h3>
+                <p className="text-[13px] text-white/50 leading-relaxed">
                   Switching to{' '}
-                  <span className="font-medium text-black/65 capitalize">{pendingOrientation}</span>{' '}
+                  <span className="font-medium text-white/65 capitalize">{pendingOrientation}</span>{' '}
                   will remove your imported images — they won't match the new card format.
                 </p>
               </div>
             </div>
             <div className="flex gap-2.5 justify-end">
-              <button onClick={cancelOrientationChange} className="px-4 py-2 rounded-xl text-[13px] font-medium text-black/55 hover:text-black/80 border border-black/10 hover:bg-black/[0.04] transition-all">Cancel</button>
-              <button onClick={confirmOrientationChange} className="px-4 py-2 rounded-xl text-[13px] font-medium bg-[#1a1a1a] hover:bg-[#2d2d2d] text-white transition-all active:scale-[0.97]">Continue</button>
+              <button onClick={cancelOrientationChange} className="px-4 py-2 rounded-full text-[13px] font-medium text-white/55 hover:text-white/80 bg-[#252525] hover:bg-[#2e2e2e] border border-white/[0.08] transition-all">Cancel</button>
+              <button onClick={confirmOrientationChange} className="px-4 py-2 rounded-full text-[13px] font-medium bg-[#9AE600] hover:bg-[#aaff00] text-[#0d0d0d] transition-all rounded-full active:scale-[0.97]">Continue</button>
             </div>
           </div>
         </div>
@@ -901,8 +946,8 @@ export default function App() {
       {/* ── Credits purchase success toast ── */}
       {creditSuccess && (
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 animate-in fade-in slide-in-from-bottom-2 duration-300">
-          <div className="flex items-center gap-2.5 bg-[#1a1a1a] text-white px-4 py-3 rounded-xl shadow-xl text-[13px] font-medium">
-            <CheckCircle className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+          <div className="flex items-center gap-2.5 bg-[#1e1e1e] border border-white/[0.07] text-white px-4 py-3 rounded-xl shadow-xl text-[13px] font-medium">
+            <Icon name="check_circle" size={18} filled className="text-emerald-400 flex-shrink-0" />
             Crédits ajoutés avec succès !
           </div>
         </div>

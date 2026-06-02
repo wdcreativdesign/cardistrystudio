@@ -5,43 +5,15 @@ import * as THREE from 'three'
 import { Card3D } from './Card3D'
 import { type CardSettings, type CameraMode } from '@/types'
 
-/* ─── Background sphere ──────────────────────────────────────────── */
-function hexToRgb(hex: string) {
-  const r = parseInt(hex.slice(1, 3), 16) / 255
-  const g = parseInt(hex.slice(3, 5), 16) / 255
-  const b = parseInt(hex.slice(5, 7), 16) / 255
-  return { r, g, b }
-}
-
-function lighten(hex: string, amount = 0.12) {
-  const { r, g, b } = hexToRgb(hex)
-  const toHex = (v: number) => Math.round(Math.min(1, v + amount) * 255).toString(16).padStart(2, '0')
-  return `#${toHex(r)}${toHex(g)}${toHex(b)}`
-}
-
+/* ─── Background (flat color, unaffected by lighting) ───────────── */
 function SceneBackground({ color }: { color: string }) {
-  const texture = useMemo(() => {
-    const canvas = document.createElement('canvas')
-    canvas.width = 512; canvas.height = 512
-    const ctx = canvas.getContext('2d')!
-    const light = lighten(color, 0.1)
-    const grad = ctx.createRadialGradient(256, 256, 0, 256, 256, 390)
-    grad.addColorStop(0,   light)
-    grad.addColorStop(0.6, color)
-    grad.addColorStop(1,   color)
-    ctx.fillStyle = grad
-    ctx.fillRect(0, 0, 512, 512)
-    const tex = new THREE.CanvasTexture(canvas)
-    tex.colorSpace = THREE.SRGBColorSpace
-    return tex
-  }, [color])
-
-  return (
-    <mesh name="scene-bg">
-      <sphereGeometry args={[90, 32, 32]} />
-      <meshBasicMaterial map={texture} side={THREE.BackSide} />
-    </mesh>
-  )
+  const { scene } = useThree()
+  useEffect(() => {
+    const bg = new THREE.Color(color)
+    scene.background = bg
+    return () => { scene.background = null }
+  }, [color, scene])
+  return null
 }
 
 /* ─── Custom gradient environment ────────────────────────────────── */
@@ -271,7 +243,7 @@ export interface CardSceneProps {
 export function CardScene({ displayedPages, displayCount, tilt, glRef, sceneRef, cameraRef, onReady }: CardSceneProps) {
   // Scene-level settings from the active card (or fallback to first)
   const activePage = displayedPages.find((p) => p.isActive) ?? displayedPages[0]
-  const bgColor        = activePage?.settings.bgColor        ?? '#f0f0f5'
+  const bgColor        = activePage?.settings.bgColor        ?? '#1d1d1d'
   const lightIntensity = activePage?.settings.lightIntensity ?? 1.15
   const cameraFov      = activePage?.settings.cameraFov      ?? 42
   const cameraMode     = activePage?.settings.cameraMode     ?? 'perspective'
@@ -306,7 +278,7 @@ export function CardScene({ displayedPages, displayCount, tilt, glRef, sceneRef,
           scale={shadowScale}
           blur={2.2}
           far={2.8}
-          color="#5566aa"
+          color="#000000"
         />
       </group>
 
