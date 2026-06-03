@@ -8,6 +8,7 @@ import { BottomBar } from './components/BottomBar'
 import { Header } from './components/Header'
 import { LeftPanel } from './components/LeftPanel'
 import { BuyCreditsModal } from './components/BuyCreditsModal'
+import { RoadmapModal } from './components/RoadmapModal'
 import { LoginModal } from './components/LoginModal'
 import { type CardSettings, type CardPage, type Workspace, type Orientation, type SavedPose } from './types'
 import { contrastColor } from './lib/utils'
@@ -186,6 +187,7 @@ export default function App() {
   const [showReloadConfirm,  setShowReloadConfirm]  = useState(false)
   const [showBuyCredits,     setShowBuyCredits]     = useState(false)
   const [showLoginModal,     setShowLoginModal]     = useState(false)
+  const [showRoadmap,        setShowRoadmap]        = useState(false)
   const [creditSuccess,      setCreditSuccess]      = useState(false)
   const [sceneReady,         setSceneReady]         = useState(false)
   const [skeletonGone,       setSkeletonGone]       = useState(false)
@@ -793,6 +795,7 @@ export default function App() {
         <Header
           onRestart={handleRestart}
           onReset={handleReset}
+          onRoadmap={() => setShowRoadmap(true)}
           onLogoClick={handleLogoClick}
           credits={displayCredits}
           onBuyCredits={() => setShowBuyCredits(true)}
@@ -921,6 +924,9 @@ export default function App() {
           </div>
         </div>
       )}
+
+      {/* ── Roadmap modal ── */}
+      {showRoadmap && <RoadmapModal onClose={() => setShowRoadmap(false)} />}
 
       {/* ── Login modal ── */}
       {showLoginModal && (

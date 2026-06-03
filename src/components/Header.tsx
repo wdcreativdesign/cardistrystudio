@@ -7,19 +7,21 @@ type MenuView     = 'main' | 'feedback'
 type FeedbackStep = 'form' | 'sending' | 'done' | 'error'
 
 interface HeaderProps {
-  onRestart:     () => void
-  onReset?:      () => void
-  onLogoClick?:  () => void
-  logoColor?:    '#1a1a1a' | '#ffffff'   // kept for compat, ignored — always white
-  credits?:      number | null
-  onBuyCredits?: () => void
-  onSignIn?:     () => void
-  userEmail?:    string | null
+  onRestart:      () => void
+  onReset?:       () => void
+  onRoadmap?:     () => void
+  onLogoClick?:   () => void
+  logoColor?:     '#1a1a1a' | '#ffffff'
+  credits?:       number | null
+  onBuyCredits?:  () => void
+  onSignIn?:      () => void
+  userEmail?:     string | null
 }
 
 export function Header({
   onRestart,
   onReset,
+  onRoadmap,
   onLogoClick,
   credits,
   onBuyCredits,
@@ -96,6 +98,15 @@ export function Header({
             className="w-10 h-10 rounded-full flex items-center justify-center bg-[#252525] border border-white/[0.1] text-white/55 hover:text-white/80 hover:bg-[#2e2e2e] transition-all active:scale-95"
           >
             <Icon name="replay" size={18} />
+          </button>
+        )}
+        {onRoadmap && (
+          <button
+            onClick={onRoadmap}
+            title="What's coming"
+            className="w-10 h-10 rounded-full flex items-center justify-center bg-[#252525] border border-white/[0.1] text-white/55 hover:text-white/80 hover:bg-[#2e2e2e] transition-all active:scale-95"
+          >
+            <Icon name="info" size={18} />
           </button>
         )}
       <div ref={menuRef} className="relative">
