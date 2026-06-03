@@ -102,8 +102,8 @@ export function BuyCreditsModal({ currentBalance, onClose }: BuyCreditsModalProp
                 type="button"
                 onClick={() => setSelected(pack.id)}
                 className={cn(
-                  'w-full flex items-center gap-6 px-6 py-4 rounded-[16px] border-2 text-left transition-all active:scale-[0.99]',
-                  selected === pack.id ? 'border-[#9ae600]' : 'border-[#242424] hover:border-white/20',
+                  'w-full flex items-center gap-6 px-6 py-4 rounded-[16px] text-left transition-all active:scale-[0.99]',
+                  selected === pack.id ? 'border-2 border-[#9ae600]' : 'border border-[#242424] hover:border-white/20',
                 )}
               >
                 <Icon
