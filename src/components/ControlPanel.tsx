@@ -603,9 +603,12 @@ export function ControlPanel({ settings, displayCount, onChange, onReset, onRand
 
           {/* Import */}
           <Section title="Import">
-            <div className="grid grid-cols-2 gap-2">
-              <DropZone label="Front Image" image={settings.frontImage} onLoad={(url) => onChange({ frontImage: url })} />
-              <DropZone label="Back Image"  image={settings.backImage}  onLoad={(url) => onChange({ backImage:  url })} />
+            <div className="flex flex-col gap-2">
+              <div className="grid grid-cols-2 gap-2">
+                <DropZone label="Front Image" image={settings.frontImage} onLoad={(url) => onChange({ frontImage: url })} />
+                <DropZone label="Back Image"  image={settings.backImage}  onLoad={(url) => onChange({ backImage:  url })} />
+              </div>
+              <p className="text-[12px] font-medium text-white text-center">Recommended size : 484x306px</p>
             </div>
           </Section>
 
