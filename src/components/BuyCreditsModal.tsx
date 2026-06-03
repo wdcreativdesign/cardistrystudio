@@ -22,6 +22,7 @@ const PACKS = [
     credits:   100,
     priceId:   'price_1TcYdQRoCyUZdpCtIkWOFp3s',
     icon:      'neurology',
+    tag:       'Popular',
     unlimited: false,
   },
   {
@@ -36,6 +37,7 @@ const PACKS = [
   {
     id:        'unlimited',
     name:      'Unlimited',
+    tag:       'Best value',
     price:     '24,99 €',
     credits:   10000,
     priceId:   'price_1TcZPpRoCyUZdpCthzlpOu7H',
@@ -102,7 +104,7 @@ export function BuyCreditsModal({ currentBalance, onClose }: BuyCreditsModalProp
                 type="button"
                 onClick={() => setSelected(pack.id)}
                 className={cn(
-                  'w-full flex items-center gap-6 px-6 py-4 rounded-[16px] text-left transition-all active:scale-[0.99]',
+                  'w-full flex items-center gap-6 px-6 rounded-[16px] text-left transition-all active:scale-[0.99] h-[72px]',
                   selected === pack.id ? 'border-2 border-[#9ae600]' : 'border border-[#242424] hover:border-white/20',
                 )}
               >
@@ -113,10 +115,15 @@ export function BuyCreditsModal({ currentBalance, onClose }: BuyCreditsModalProp
                 />
                 <div className="flex-1 flex flex-col gap-1 min-w-0">
                   <p className="text-[14px] font-medium text-white">{pack.name}</p>
-                  <p className="text-[12px] font-medium text-[#999]">
-                    {pack.unlimited ? 'Unlimited exports' : `${pack.credits} tokens`}
-                  </p>
+                  {!pack.unlimited && (
+                    <p className="text-[12px] font-medium text-[#999]">{pack.credits} tokens</p>
+                  )}
                 </div>
+                {'tag' in pack && pack.tag && (
+                  <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-[#9ae600]/15 text-[#9ae600] flex-shrink-0 self-center">
+                    {pack.tag}
+                  </span>
+                )}
                 <p className="text-[14px] font-medium text-white flex-shrink-0">{pack.price}</p>
               </button>
             ))}
@@ -136,7 +143,7 @@ export function BuyCreditsModal({ currentBalance, onClose }: BuyCreditsModalProp
             {loading ? 'Redirecting…' : `Buy – ${selectedPack.price}`}
           </button>
 
-          <p className="text-[14px] font-medium text-[#999] text-center">
+          <p className="text-[12px] font-medium text-[#999] text-center">
             Secured by Stripe. Cost {EXPORT_COST} tokens by exports
           </p>
         </div>
