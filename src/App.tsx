@@ -176,6 +176,64 @@ function CanvasSkeleton({
   )
 }
 
+/* ── Dot parallax background ─────────────────────────────────────── */
+function DotBackground() {
+  const ref = useRef<HTMLDivElement>(null)
+  const raf = useRef<number | null>(null)
+  const target = useRef({ x: 0, y: 0 })
+  const current = useRef({ x: 0, y: 0 })
+
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+
+    function onMove(e: MouseEvent) {
+      const rect = el!.getBoundingClientRect()
+      // Normalize to -1 → 1
+      const nx = (e.clientX - rect.left) / rect.width  * 2 - 1
+      const ny = (e.clientY - rect.top)  / rect.height * 2 - 1
+      target.current = { x: nx * 14, y: ny * 10 }
+    }
+
+    function onLeave() {
+      target.current = { x: 0, y: 0 }
+    }
+
+    function tick() {
+      // Lerp toward target
+      current.current.x += (target.current.x - current.current.x) * 0.06
+      current.current.y += (target.current.y - current.current.y) * 0.06
+      if (el) el.style.transform = `translate(${current.current.x}px, ${current.current.y}px)`
+      raf.current = requestAnimationFrame(tick)
+    }
+
+    el.parentElement?.addEventListener('mousemove', onMove)
+    el.parentElement?.addEventListener('mouseleave', onLeave)
+    raf.current = requestAnimationFrame(tick)
+
+    return () => {
+      el.parentElement?.removeEventListener('mousemove', onMove)
+      el.parentElement?.removeEventListener('mouseleave', onLeave)
+      if (raf.current) cancelAnimationFrame(raf.current)
+    }
+  }, [])
+
+  return (
+    <div
+      ref={ref}
+      className="absolute pointer-events-none"
+      style={{
+        inset: '-30px',
+        zIndex: 5,
+        backgroundImage: 'radial-gradient(circle, rgba(255,255,255,0.13) 1px, transparent 1px)',
+        backgroundSize: '28px 28px',
+        maskImage: 'radial-gradient(ellipse 70% 70% at 50% 50%, transparent 55%, rgba(0,0,0,0.7) 78%, black 100%)',
+        WebkitMaskImage: 'radial-gradient(ellipse 70% 70% at 50% 50%, transparent 55%, rgba(0,0,0,0.7) 78%, black 100%)',
+      }}
+    />
+  )
+}
+
 /* ── App ─────────────────────────────────────────────────────────── */
 export default function App() {
   const _init = loadWorkspaces()
@@ -805,13 +863,15 @@ export default function App() {
 
         {/* ── Canvas viewport ── */}
         <div
-          className="flex-1 relative min-w-0"
+          className="flex-1 relative min-w-0 overflow-hidden"
           style={{
             background: settings.bgColor === 'transparent'
               ? 'repeating-conic-gradient(#2a2a2a 0% 25%, #222 0% 50%) 0 0 / 20px 20px'
               : settings.bgColor,
           }}
         >
+          {/* Dot parallax background */}
+          <DotBackground />
           {/* Skeleton */}
           {!skeletonGone && (
             <CanvasSkeleton
