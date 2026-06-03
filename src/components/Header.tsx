@@ -164,7 +164,7 @@ export function Header({
                       <Icon name="bolt" size={16} className="text-white flex-shrink-0" />
                       <span className="flex-1 text-[14px] font-medium text-white">Credits</span>
                       <span className="text-[14px] font-medium text-[#9ae600]">
-                        {credits >= 1000 ? '∞' : credits}
+                        {credits >= 1000 ? 'Unlimited' : credits}
                       </span>
                     </div>
                   )}

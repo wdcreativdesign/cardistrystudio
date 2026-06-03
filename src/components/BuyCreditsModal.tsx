@@ -12,6 +12,7 @@ const PACKS = [
     price:     '2,99 €',
     credits:   50,
     priceId:   'price_1TcYdQRoCyUZdpCt4JmGQytW',
+    icon:      'science',
     unlimited: false,
   },
   {
@@ -20,7 +21,7 @@ const PACKS = [
     price:     '4,99 €',
     credits:   100,
     priceId:   'price_1TcYdQRoCyUZdpCtIkWOFp3s',
-    popular:   true,
+    icon:      'neurology',
     unlimited: false,
   },
   {
@@ -29,6 +30,7 @@ const PACKS = [
     price:     '9,99 €',
     credits:   500,
     priceId:   'price_1TcYdQRoCyUZdpCtV66jq7nu',
+    icon:      'panorama_photosphere',
     unlimited: false,
   },
   {
@@ -37,6 +39,7 @@ const PACKS = [
     price:     '24,99 €',
     credits:   10000,
     priceId:   'price_1TcZPpRoCyUZdpCthzlpOu7H',
+    icon:      'all_inclusive',
     unlimited: true,
   },
 ] as const
@@ -70,87 +73,71 @@ export function BuyCreditsModal({ currentBalance, onClose }: BuyCreditsModalProp
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
-      {/* Backdrop */}
       <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px]" onClick={onClose} />
 
-      {/* Modal */}
-      <div className="relative bg-[#111] border border-[#242424] rounded-[24px] w-[320px] mx-4 animate-in fade-in zoom-in-95 duration-150 drop-shadow-[0px_8px_24px_rgba(0,0,0,0.48)]">
+      <div className="relative bg-[#111] border border-[#242424] rounded-[24px] w-[380px] mx-4 p-6 flex flex-col gap-6 drop-shadow-[0px_8px_12px_rgba(0,0,0,0.32)] animate-in fade-in zoom-in-95 duration-150">
 
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-[#242424]">
-          <div className="flex flex-col gap-1 px-2 py-2">
-            <p className="text-[14px] font-medium text-white">Buy credits</p>
-            <p className="text-[12px] text-[#999]">
-              Balance · <span className="text-white">{currentBalance}</span> credit{currentBalance !== 1 ? 's' : ''}
+        <div className="flex items-start justify-between">
+          <div className="flex flex-col gap-2">
+            <p className="text-[16px] font-medium text-white">Buy tokens</p>
+            <p className="text-[14px] font-medium text-[#999]">
+              Balance · <span className="text-white">{currentBalance >= 1000 ? 'Unlimited' : currentBalance}</span> tokens
               {currentBalance < EXPORT_COST && (
                 <span className="text-red-400 ml-1">· {EXPORT_COST} needed</span>
               )}
             </p>
           </div>
-          <button
-            onClick={onClose}
-            className="w-10 h-10 rounded-full flex items-center justify-center bg-[#242424] text-white/55 hover:text-white/80 transition-all active:scale-95 flex-shrink-0"
-          >
-            <Icon name="close" size={18} />
+          <button type="button" onClick={onClose} className="text-white hover:text-white/60 transition-colors">
+            <Icon name="close" size={20} />
           </button>
         </div>
 
         {/* Packs */}
-        <div className="p-4 flex flex-col gap-2">
-          {PACKS.map((pack) => (
-            <button
-              key={pack.id}
-              onClick={() => setSelected(pack.id)}
-              className={cn(
-                'w-full flex items-center gap-2 p-[8px] rounded-[8px] border-2 transition-all text-left active:scale-[0.99]',
-                selected === pack.id ? 'border-[#9ae600]' : 'border-[#242424] hover:border-white/20',
-              )}
-            >
-              <div className="w-8 h-8 rounded-full bg-[#242424] flex items-center justify-center flex-shrink-0">
+        <div className="flex flex-col gap-4">
+          <div className="flex flex-col gap-4">
+            {PACKS.map((pack) => (
+              <button
+                key={pack.id}
+                type="button"
+                onClick={() => setSelected(pack.id)}
+                className={cn(
+                  'w-full flex items-center gap-6 px-6 py-4 rounded-[16px] border-2 text-left transition-all active:scale-[0.99]',
+                  selected === pack.id ? 'border-[#9ae600]' : 'border-[#242424] hover:border-white/20',
+                )}
+              >
                 <Icon
-                  name={pack.unlimited ? 'all_inclusive' : 'bolt'}
-                  size={16}
-                  className={selected === pack.id ? 'text-[#9ae600]' : 'text-white/40'}
+                  name={pack.icon}
+                  size={20}
+                  className="text-[#9ae600] flex-shrink-0"
                 />
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  <span className="text-[14px] font-medium text-white">{pack.name}</span>
-                  {'popular' in pack && pack.popular && (
-                    <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-[#9ae600]/15 text-[#9ae600]">
-                      Popular
-                    </span>
-                  )}
-                  {pack.unlimited && (
-                    <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-white/[0.06] text-white/40">
-                      Best value
-                    </span>
-                  )}
+                <div className="flex-1 flex flex-col gap-1 min-w-0">
+                  <p className="text-[14px] font-medium text-white">{pack.name}</p>
+                  <p className="text-[12px] font-medium text-[#999]">
+                    {pack.unlimited ? 'Unlimited exports' : `${pack.credits} tokens`}
+                  </p>
                 </div>
-                <p className="text-[12px] text-[#999]">
-                  {pack.unlimited ? 'Unlimited exports' : `${pack.credits} credits`}
-                </p>
-              </div>
-              <span className="text-[14px] font-medium text-white flex-shrink-0">{pack.price}</span>
-            </button>
-          ))}
-        </div>
+                <p className="text-[14px] font-medium text-white flex-shrink-0">{pack.price}</p>
+              </button>
+            ))}
+          </div>
 
-        {/* Footer / CTA */}
-        <div className="p-4 pt-0 flex flex-col gap-3">
+          {/* CTA */}
           <button
+            type="button"
             onClick={handleBuy}
             disabled={loading}
             className={cn(
               'w-full h-[41px] rounded-full text-[16px] font-medium transition-all active:scale-[0.98] flex items-center justify-center gap-2',
-              loading ? 'bg-[#9ae600]/50 text-[#0d0d0d]/50 cursor-not-allowed' : 'bg-[#9ae600] hover:bg-[#aaff00] text-[#0d0d0d]',
+              loading ? 'bg-[#9ae600]/50 text-[#111]/50 cursor-not-allowed' : 'bg-[#9ae600] hover:bg-[#aaff00] text-[#111]',
             )}
           >
             {loading && <Icon name="progress_activity" size={18} className="animate-spin" />}
-            {loading ? 'Redirecting…' : `Buy — ${selectedPack.price}`}
+            {loading ? 'Redirecting…' : `Buy – ${selectedPack.price}`}
           </button>
-          <p className="text-[12px] text-[#999] text-center">
-            Secured by Stripe · 1 export = {EXPORT_COST} credits
+
+          <p className="text-[14px] font-medium text-[#999] text-center">
+            Secured by Stripe. Cost {EXPORT_COST} tokens by exports
           </p>
         </div>
 
