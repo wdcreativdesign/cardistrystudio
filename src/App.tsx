@@ -9,6 +9,7 @@ import { Header } from './components/Header'
 import { LeftPanel } from './components/LeftPanel'
 import { BuyCreditsModal } from './components/BuyCreditsModal'
 import { RoadmapModal } from './components/RoadmapModal'
+import { SmallScreenBlock } from './components/SmallScreenBlock'
 import { LoginModal } from './components/LoginModal'
 import { type CardSettings, type CardPage, type Workspace, type Orientation, type SavedPose } from './types'
 import { contrastColor } from './lib/utils'
@@ -243,12 +244,19 @@ export default function App() {
   const [altHeld,            setAltHeld]            = useState(false)
   const [pendingOrientation, setPendingOrientation] = useState<Orientation | null>(null)
   const [showReloadConfirm,  setShowReloadConfirm]  = useState(false)
+  const [screenTooSmall,     setScreenTooSmall]     = useState(window.innerWidth < 790)
   const [showBuyCredits,     setShowBuyCredits]     = useState(false)
   const [showLoginModal,     setShowLoginModal]     = useState(false)
   const [showRoadmap,        setShowRoadmap]        = useState(false)
   const [creditSuccess,      setCreditSuccess]      = useState(false)
   const [sceneReady,         setSceneReady]         = useState(false)
   const [skeletonGone,       setSkeletonGone]       = useState(false)
+
+  useEffect(() => {
+    const check = () => setScreenTooSmall(window.innerWidth < 790)
+    window.addEventListener('resize', check)
+    return () => window.removeEventListener('resize', check)
+  }, [])
 
   const handleSceneReady = useCallback(() => {
     setSceneReady(true)
@@ -828,6 +836,8 @@ export default function App() {
   }, [flushDrag])
 
   /* ── Render ── */
+  if (screenTooSmall) return <SmallScreenBlock />
+
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-[#141414]">
 
