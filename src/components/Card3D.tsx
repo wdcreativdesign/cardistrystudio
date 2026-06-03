@@ -100,12 +100,112 @@ function loadImageAsTexture(
   img.src = src
 }
 
-/* ─── Glow config ────────────────────────────────────────────────── */
-const GLOW_LAYERS = [
-  { scale: 1.055, base: 0.72 },
-  { scale: 1.155, base: 0.34 },
-  { scale: 1.30,  base: 0.12 },
-] as const
+/* ─── Selection dots (ondulating perimeter) ─────────────────────── */
+const DOT_VERT = `
+  attribute float aOffset;
+  uniform float uTime;
+  varying float vAlpha;
+  void main() {
+    float w1 = 0.5 + 0.5 * sin(aOffset * 28.0 - uTime * 5.5);
+    float w2 = 0.5 + 0.5 * sin(aOffset * 14.0 + uTime * 3.8);
+    float w3 = 0.5 + 0.5 * sin(aOffset * 48.0 - uTime * 8.0);
+    float wave = w1 * 0.5 + w2 * 0.3 + w3 * 0.2;
+    wave = wave * wave;
+    vAlpha      = 0.05 + wave * 0.95;
+    gl_PointSize = 1.2 + wave * 5.5;
+    gl_Position  = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+  }
+`
+const DOT_FRAG = `
+  varying float vAlpha;
+  uniform vec3 uColor;
+  void main() {
+    vec2 c = gl_PointCoord - 0.5;
+    if (length(c) > 0.5) discard;
+    float soft = 1.0 - smoothstep(0.2, 0.5, length(c));
+    gl_FragColor = vec4(uColor, vAlpha * soft);
+  }
+`
+
+function buildPerimeterGeo(orientation: Orientation, edgeColor: string) {
+  const { cW, cH } = getDims(orientation)
+  const r  = CORNER_R * 1.06
+  const hw = cW / 2 + 0.018
+  const hh = cH / 2 + 0.018
+  const step = 0.025
+  const pts: number[] = [], off: number[] = []
+
+  const addArc = (cx: number, cy: number, a0: number, a1: number) => {
+    const n = Math.max(4, Math.round(Math.abs(a1 - a0) / 0.18))
+    for (let i = 0; i <= n; i++) {
+      const a = a0 + (a1 - a0) * (i / n)
+      pts.push(cx + Math.cos(a) * r, cy + Math.sin(a) * r, 0); off.push(0)
+    }
+  }
+  const addLine = (x0: number, y0: number, x1: number, y1: number) => {
+    const dx = x1-x0, dy = y1-y0, len = Math.sqrt(dx*dx+dy*dy)
+    const n = Math.max(2, Math.floor(len / step))
+    for (let i = 0; i < n; i++) { const t = i/n; pts.push(x0+dx*t, y0+dy*t, 0); off.push(0) }
+  }
+  addArc(-(hw-r), -(hh-r), Math.PI,       Math.PI*1.5)
+  addLine(-(hw-r), -hh,    (hw-r), -hh)
+  addArc( (hw-r), -(hh-r), Math.PI*1.5,   0)
+  addLine( hw,  -(hh-r),   hw,   (hh-r))
+  addArc( (hw-r),  (hh-r), 0,            Math.PI*0.5)
+  addLine( (hw-r),  hh,   -(hw-r),  hh)
+  addArc(-(hw-r),  (hh-r), Math.PI*0.5,   Math.PI)
+  addLine(-hw,  (hh-r),   -hw, -(hh-r))
+  const total = pts.length / 3
+  for (let i = 0; i < total; i++) off[i] = (i / total) * Math.PI * 2
+  const geo = new THREE.BufferGeometry()
+  geo.setAttribute('position', new THREE.Float32BufferAttribute(pts, 3))
+  geo.setAttribute('aOffset',  new THREE.Float32BufferAttribute(off, 1))
+  const hex = edgeColor.replace('#','')
+  const color = new THREE.Color(
+    parseInt(hex.slice(0,2),16)/255,
+    parseInt(hex.slice(2,4),16)/255,
+    parseInt(hex.slice(4,6),16)/255,
+  )
+  return { geo, color }
+}
+
+function SelectionDots({ edgeColor, orientation, z, active }: {
+  edgeColor: string; orientation: Orientation; z: number; active: boolean
+}) {
+  const timeRef = useRef(0)
+  const matRef  = useRef<THREE.ShaderMaterial>(null)
+  const ptRef   = useRef<THREE.Points>(null)
+
+  const { geo, color } = useMemo(
+    () => buildPerimeterGeo(orientation, edgeColor),
+    [orientation, edgeColor]
+  )
+
+  // Place dots on layer 1 — ContactShadows camera only renders layer 0
+  useEffect(() => {
+    if (ptRef.current) ptRef.current.layers.set(1)
+  }, [])
+
+  // Keep animation running at all times — visible prop handles show/hide
+  useFrame((_, delta) => {
+    timeRef.current += delta
+    if (matRef.current) matRef.current.uniforms.uTime.value = timeRef.current
+  })
+
+  return (
+    <points ref={ptRef} geometry={geo} position={[0, 0, z]}
+      visible={active} renderOrder={10} castShadow={false} receiveShadow={false}
+    >
+      <shaderMaterial
+        ref={matRef}
+        vertexShader={DOT_VERT} fragmentShader={DOT_FRAG}
+        uniforms={{ uTime: { value: 0 }, uColor: { value: color } }}
+        transparent depthWrite={false} depthTest={false}
+        blending={THREE.AdditiveBlending}
+      />
+    </points>
+  )
+}
 
 /* ─── Card3D ─────────────────────────────────────────────────────── */
 interface Card3DProps {
@@ -212,16 +312,7 @@ export function Card3D({ settings, tilt, isActive = false }: Card3DProps) {
     scaleVec.current.setScalar(settings.zoom)
     g.scale.lerp(scaleVec.current, 0.1)
 
-    /* ── Glow pulse ── */
-    if (isActive) {
-      glowClock.current += delta
-      const pulse = 0.78 + Math.sin(glowClock.current * 2.2) * 0.22
-      glowRefs.current.forEach((mat, i) => {
-        if (mat) mat.opacity = GLOW_LAYERS[i % GLOW_LAYERS.length].base * pulse
-      })
-    } else {
-      glowClock.current = 0
-    }
+    // (animation handled by SelectionDots shaderMaterial)
   })
 
   const cfg = FINISH_CONFIGS[settings.finish]
@@ -268,31 +359,10 @@ export function Card3D({ settings, tilt, isActive = false }: Card3DProps) {
   return (
     <group ref={groupRef}>
 
-      {/* ── Lueur sélection (derrière les faces, bords visibles) ──── */}
-      <group name="selection-glow">
-        {isActive && GLOW_LAYERS.map((g, i) => (
-          <mesh key={`gf${i}`} geometry={faceGeo} position={[0, 0, GLOW_ZF]} scale={g.scale}>
-            <meshBasicMaterial
-              ref={(m) => { glowRefs.current[i] = m }}
-              color={settings.edgeColor}
-              transparent
-              opacity={g.base}
-              depthWrite={false}
-            />
-          </mesh>
-        ))}
-        {isActive && GLOW_LAYERS.map((g, i) => (
-          <mesh key={`gb${i}`} geometry={faceGeo} position={[0, 0, GLOW_ZB]} rotation={[0, Math.PI, 0]} scale={g.scale}>
-            <meshBasicMaterial
-              ref={(m) => { glowRefs.current[GLOW_LAYERS.length + i] = m }}
-              color={settings.edgeColor}
-              transparent
-              opacity={g.base}
-              depthWrite={false}
-            />
-          </mesh>
-        ))}
-      </group>
+      {/* ── Dots sélection ondulants ── */}
+      <SelectionDots edgeColor={settings.edgeColor} orientation={geoOrientation} z={ CARD_D / 2 + 0.003} active={isActive} />
+      <SelectionDots edgeColor={settings.edgeColor} orientation={geoOrientation} z={-CARD_D / 2 - 0.003} active={isActive} />
+
 
       {/* ── Corps (tranche) — ExtrudeGeometry centrée sur Z ──────── */}
       <mesh geometry={bodyGeo} castShadow>

@@ -83,6 +83,13 @@ function GradientEnvironment() {
   return <Environment map={envMap} />
 }
 
+/* ─── Enable layer 1 on main camera (SelectionDots sont sur layer 1) */
+function EnableLayer1() {
+  const { camera } = useThree()
+  useEffect(() => { camera.layers.enable(1) }, [camera])
+  return null
+}
+
 /* ─── ACES filmic tone mapping ───────────────────────────────────── */
 function ToneMapping() {
   const { gl } = useThree()
@@ -282,6 +289,7 @@ export function CardScene({ displayedPages, displayCount, tilt, glRef, sceneRef,
         />
       </group>
 
+      <EnableLayer1 />
       <ToneMapping />
       <Lighting intensity={lightIntensity} />
       <GradientEnvironment />
