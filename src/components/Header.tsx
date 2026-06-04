@@ -95,7 +95,7 @@ export function Header({
           <button
             onClick={onReset}
             title="Reset to default"
-            className="w-10 h-10 rounded-full flex items-center justify-center bg-[#252525] border border-white/[0.1] text-white/55 hover:text-white/80 hover:bg-[#2e2e2e] transition-all active:scale-95"
+            className="w-10 h-10 rounded-full flex items-center justify-center bg-[#252525] text-white/55 hover:text-white/80 hover:bg-[#2e2e2e] transition-all active:scale-95"
           >
             <Icon name="replay" size={18} />
           </button>
@@ -104,7 +104,7 @@ export function Header({
           <button
             onClick={onRoadmap}
             title="What's coming"
-            className="w-10 h-10 rounded-full flex items-center justify-center bg-[#252525] border border-white/[0.1] text-white/55 hover:text-white/80 hover:bg-[#2e2e2e] transition-all active:scale-95"
+            className="w-10 h-10 rounded-full flex items-center justify-center bg-[#252525] text-white/55 hover:text-white/80 hover:bg-[#2e2e2e] transition-all active:scale-95"
           >
             <Icon name="info" size={18} />
           </button>
@@ -115,7 +115,7 @@ export function Header({
           title={hasAvatar ? 'Profile' : 'Sign in'}
           className={cn(
             'w-10 h-10 rounded-full flex items-center justify-center text-[13px] font-semibold transition-all active:scale-[0.95]',
-            'bg-[#252525] hover:bg-[#2e2e2e] border border-white/[0.1]',
+            'bg-[#252525] hover:bg-[#2e2e2e]',
             menuOpen && 'bg-[#2e2e2e]',
             hasAvatar ? 'text-white/70' : 'text-white/55',
           )}

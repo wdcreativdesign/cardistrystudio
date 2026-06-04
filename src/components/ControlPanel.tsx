@@ -565,10 +565,11 @@ interface ControlPanelProps {
   onRandomize:      () => void
   onExport:         (opts: { format: 'png' | 'jpg'; scale: number; showShadow: boolean }) => void
   onCapturePreview: (opts?: { showShadow?: boolean }) => CaptureResult | null
+  tab:              'create' | 'export'
+  onTabChange:      (tab: 'create' | 'export') => void
 }
 
-export function ControlPanel({ settings, displayCount, onChange, onReset, onRandomize, onExport, onCapturePreview }: ControlPanelProps) {
-  const [tab, setTab] = useState<'create' | 'export'>('create')
+export function ControlPanel({ settings, displayCount, onChange, onReset, onRandomize, onExport, onCapturePreview, tab, onTabChange }: ControlPanelProps) {
 
   return (
     <aside className="flex flex-col w-[280px] min-w-[280px] h-screen bg-[#111] border-l border-[#242424]">
@@ -577,7 +578,7 @@ export function ControlPanel({ settings, displayCount, onChange, onReset, onRand
       <div className="h-[72px] flex items-center px-4 border-b border-white/[0.06]">
         <div className="flex gap-0.5 p-1 bg-[#252525] rounded-full w-full">
           <button
-            onClick={() => setTab('create')}
+            onClick={() => onTabChange('create')}
             className={cn(
               'flex-1 text-[14px] py-[7px] rounded-full transition-all',
               tab === 'create' ? 'bg-[#141414] text-white font-medium shadow-sm' : 'text-[#999] hover:text-white/60 font-medium',
@@ -586,7 +587,7 @@ export function ControlPanel({ settings, displayCount, onChange, onReset, onRand
             Create
           </button>
           <button
-            onClick={() => setTab('export')}
+            onClick={() => onTabChange('export')}
             className={cn(
               'flex-1 text-[14px] py-[7px] rounded-full transition-all',
               tab === 'export' ? 'bg-[#141414] text-white font-medium shadow-sm' : 'text-[#999] hover:text-white/60 font-medium',

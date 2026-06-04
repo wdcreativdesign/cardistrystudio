@@ -45,7 +45,7 @@ export function BottomBar({ settings, onChange, displayCount, onDisplayCountChan
           onClick={cycleCount}
           onMouseEnter={() => setCountTooltip(true)}
           onMouseLeave={() => setCountTooltip(false)}
-          className="w-10 h-10 flex items-center justify-center rounded-full bg-[#252525] border border-white/[0.1] text-white/55 hover:text-white/80 hover:bg-[#2e2e2e] transition-all active:scale-95"
+          className="w-10 h-10 flex items-center justify-center rounded-full bg-[#252525] text-white/55 hover:text-white/80 hover:bg-[#2e2e2e] transition-all active:scale-95"
         >
           <Icon name="style" size={18} />
         </button>
@@ -76,7 +76,7 @@ export function BottomBar({ settings, onChange, displayCount, onDisplayCountChan
           ref={posesButtonRef}
           onClick={() => setPosesOpen((o) => !o)}
           title="Saved poses"
-          className="w-10 h-10 flex items-center justify-center rounded-full bg-[#252525] border border-white/[0.1] text-white/55 hover:text-white/80 hover:bg-[#2e2e2e] transition-all active:scale-95"
+          className="w-10 h-10 flex items-center justify-center rounded-full bg-[#252525] text-white/55 hover:text-white/80 hover:bg-[#2e2e2e] transition-all active:scale-95"
         >
           <Icon name="bookmark" size={18} filled={posesOpen} />
         </button>

@@ -99,7 +99,7 @@ function WorkspaceThumb({
           onClick={(e) => { e.stopPropagation(); onDelete() }}
           className={cn(
             'absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full',
-            'bg-[#252525] border border-white/[0.1] shadow-sm',
+            'bg-[#252525] shadow-sm',
             'flex items-center justify-center',
             'text-white/35 hover:text-red-400 hover:border-red-400/30 hover:bg-red-500/10',
             'opacity-0 group-hover:opacity-100 transition-opacity duration-100',
@@ -166,7 +166,7 @@ export function LeftPanel({
       <button
         onClick={onAdd}
         title="New workspace"
-        className="w-10 h-10 rounded-full flex items-center justify-center bg-[#252525] border border-white/[0.1] text-white/55 hover:text-white/80 hover:bg-[#2e2e2e] transition-all active:scale-95 flex-shrink-0"
+        className="w-10 h-10 rounded-full flex items-center justify-center bg-[#252525] text-white/55 hover:text-white/80 hover:bg-[#2e2e2e] transition-all active:scale-95 flex-shrink-0"
       >
         <Icon name="add" size={20} />
       </button>

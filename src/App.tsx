@@ -247,6 +247,8 @@ export default function App() {
   const [screenTooSmall,     setScreenTooSmall]     = useState(window.innerWidth < 790)
   const [showBuyCredits,     setShowBuyCredits]     = useState(false)
   const [showLoginModal,     setShowLoginModal]     = useState(false)
+  const [controlPanelTab,   setControlPanelTab]   = useState<'create' | 'export'>('create')
+  const returnToExportRef = useRef(false)
   const [showRoadmap,        setShowRoadmap]        = useState(false)
   const [creditSuccess,      setCreditSuccess]      = useState(false)
   const [sceneReady,         setSceneReady]         = useState(false)
@@ -266,10 +268,24 @@ export default function App() {
 
   /* ── Current user ── */
   const [currentUser, setCurrentUser] = useState<User | null>(null)
+  const [showLoginToast, setShowLoginToast] = useState(false)
+  const [showLogoutToast, setShowLogoutToast] = useState(false)
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => setCurrentUser(user))
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       setCurrentUser(session?.user ?? null)
+      if (event === 'SIGNED_IN') {
+        setShowLoginToast(true)
+        setTimeout(() => setShowLoginToast(false), 3500)
+        if (returnToExportRef.current) {
+          setControlPanelTab('export')
+          returnToExportRef.current = false
+        }
+      }
+      if (event === 'SIGNED_OUT') {
+        setShowLogoutToast(true)
+        setTimeout(() => setShowLogoutToast(false), 3500)
+      }
     })
     return () => subscription.unsubscribe()
   }, [])
@@ -586,6 +602,9 @@ export default function App() {
 
     let dataUrl: string
 
+    const bgColor    = settingsRef.current.bgColor
+    const isGradient = bgColor.startsWith('linear-gradient') || bgColor.startsWith('radial-gradient')
+
     if (isTransparent) {
       if (bgLayers) bgLayers.visible = false
       const savedColor = new THREE.Color()
@@ -597,6 +616,26 @@ export default function App() {
       dataUrl = gl.domElement.toDataURL('image/png', 0.85)
       gl.setClearColor(savedColor, savedAlpha)
       if (bgLayers) bgLayers.visible = true
+    } else if (isGradient) {
+      const savedColor = new THREE.Color()
+      gl.getClearColor(savedColor)
+      const savedAlpha = gl.getClearAlpha()
+      gl.setClearColor(0x000000, 0)
+      gl.clear()
+      gl.render(scene, camera)
+      const sceneDataUrl = gl.domElement.toDataURL('image/png', 0.85)
+      gl.setClearColor(savedColor, savedAlpha)
+      const comp = document.createElement('canvas')
+      comp.width  = EXPORT_W
+      comp.height = EXPORT_H
+      const ctx = comp.getContext('2d')!
+      ctx.fillStyle = bgColor
+      ctx.fillRect(0, 0, EXPORT_W, EXPORT_H)
+      const img = new Image()
+      img.src = sceneDataUrl
+      /* Synchronous draw — image is already decoded since it's a data URL */
+      ctx.drawImage(img, 0, 0, EXPORT_W, EXPORT_H)
+      dataUrl = comp.toDataURL('image/png', 0.85)
     } else {
       gl.render(scene, camera)
       dataUrl = gl.domElement.toDataURL('image/png', 0.85)
@@ -671,6 +710,9 @@ export default function App() {
 
     let dataURL: string
 
+    const bgColor    = settingsRef.current.bgColor
+    const isGradient = bgColor.startsWith('linear-gradient') || bgColor.startsWith('radial-gradient')
+
     if (isTransparent) {
       if (bgLayers) bgLayers.visible = false
       const savedColor = new THREE.Color()
@@ -682,6 +724,50 @@ export default function App() {
       dataURL = gl.domElement.toDataURL('image/png', 1.0)
       gl.setClearColor(savedColor, savedAlpha)
       if (bgLayers) bgLayers.visible = true
+    } else if (isGradient) {
+      /* Render scene transparent, then composite gradient + scene on a 2D canvas */
+      const savedColor = new THREE.Color()
+      gl.getClearColor(savedColor)
+      const savedAlpha = gl.getClearAlpha()
+      gl.setClearColor(0x000000, 0)
+      gl.clear()
+      gl.render(scene, camera)
+      const sceneDataUrl = gl.domElement.toDataURL('image/png', 1.0)
+      gl.setClearColor(savedColor, savedAlpha)
+
+      const exportW = EXPORT_W * opts.scale
+      const exportH = EXPORT_H * opts.scale
+      const comp = document.createElement('canvas')
+      comp.width  = exportW
+      comp.height = exportH
+      const ctx = comp.getContext('2d')!
+      ctx.fillStyle = bgColor
+      ctx.fillRect(0, 0, exportW, exportH)
+      const img = new Image()
+      img.src = sceneDataUrl
+      img.onload = () => {
+        ctx.drawImage(img, 0, 0, exportW, exportH)
+        const mimeType = opts.format === 'jpg' ? 'image/jpeg' : 'image/png'
+        const quality  = opts.format === 'jpg' ? 0.95 : 1.0
+        const finalUrl = comp.toDataURL(mimeType, quality)
+        const ext  = opts.format
+        const link = document.createElement('a')
+        link.download = `cardistrystudio-export-${EXPORT_W}x${EXPORT_H}@${opts.scale}x.${ext}`
+        link.href = finalUrl; link.click()
+      }
+      /* Restore canvas size + camera early for gradient path */
+      gl.setPixelRatio(origDpr)
+      gl.setSize(origW, origH, false)
+      if (camera instanceof THREE.PerspectiveCamera && savedAspect !== null) {
+        camera.aspect = savedAspect; camera.updateProjectionMatrix()
+      } else if (camera instanceof THREE.OrthographicCamera && savedOrthoLeft !== null && savedOrthoRight !== null) {
+        camera.left = savedOrthoLeft; camera.right = savedOrthoRight; camera.updateProjectionMatrix()
+      }
+      gl.render(scene, camera)
+      if (shadowLayer) shadowLayer.visible = true
+      glowGroups.forEach((g) => { g.visible = true })
+      trackExport(opts.format, opts.scale)
+      return
     } else {
       gl.render(scene, camera)
       const mimeType = opts.format === 'jpg' ? 'image/jpeg' : 'image/png'
@@ -716,7 +802,7 @@ export default function App() {
   /* ── Export avec vérification crédits ── */
   const handleExport = useCallback(async (opts: { format: 'png' | 'jpg'; scale: number; showShadow: boolean }) => {
     // No authenticated user — prompt login (always, even in dev)
-    if (!currentUser) { setShowLoginModal(true); return }
+    if (!currentUser) { returnToExportRef.current = true; setShowLoginModal(true); return }
 
     // Dev mode — bypass credit logic only
     if (import.meta.env.DEV) { doExport(opts); return }
@@ -945,6 +1031,8 @@ export default function App() {
         onRandomize={handleRandomize}
         onExport={handleExport}
         onCapturePreview={capturePreview}
+        tab={controlPanelTab}
+        onTabChange={setControlPanelTab}
       />
 
       {/* ── Reload confirm dialog ── */}
@@ -1012,6 +1100,26 @@ export default function App() {
           currentBalance={displayCredits ?? 0}
           onClose={() => setShowBuyCredits(false)}
         />
+      )}
+
+      {/* ── Login success toast ── */}
+      {showLoginToast && (
+        <div style={{animation: 'toastDropDown 0.35s cubic-bezier(0.34,1.56,0.64,1) forwards'}} className="fixed top-6 left-1/2 -translate-x-1/2 z-50">
+          <div className="flex items-center gap-2.5 bg-[#1e1e1e] border border-white/[0.07] text-white px-4 py-3 rounded-xl shadow-xl text-[13px] font-medium">
+            <Icon name="check_circle" size={18} filled className="text-[#9ae600] flex-shrink-0" />
+            Connecté avec succès !
+          </div>
+        </div>
+      )}
+
+      {/* ── Logout toast ── */}
+      {showLogoutToast && (
+        <div style={{animation: 'toastDropDown 0.35s cubic-bezier(0.34,1.56,0.64,1) forwards'}} className="fixed top-6 left-1/2 -translate-x-1/2 z-50">
+          <div className="flex items-center gap-2.5 bg-[#1e1e1e] border border-white/[0.07] text-white px-4 py-3 rounded-xl shadow-xl text-[13px] font-medium">
+            <Icon name="logout" size={18} className="text-white/50 flex-shrink-0" />
+            Déconnecté avec succès
+          </div>
+        </div>
       )}
 
       {/* ── Credits purchase success toast ── */}
