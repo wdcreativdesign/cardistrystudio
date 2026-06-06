@@ -1093,7 +1093,7 @@ export default function App() {
             </div>
             <div className="flex gap-4 w-full">
               <button onClick={() => setShowReloadConfirm(false)} className="flex-1 h-[41px] flex items-center justify-center px-6 rounded-full bg-[#242424] text-white text-[16px] font-medium hover:bg-[#2e2e2e] transition-colors">Keep editing</button>
-              <button onClick={() => window.location.reload()} className="flex-1 h-[41px] flex items-center justify-center px-6 rounded-full bg-[#9ae600] text-[#111] text-[16px] font-medium hover:bg-[#aaff00] transition-colors active:scale-[0.97]">Refresh anyway</button>
+              <button onClick={() => window.location.reload()} className="flex-1 h-[41px] flex items-center justify-center px-6 rounded-full bg-[#9ae600] text-[#111] text-[16px] font-medium hover:bg-[#aaff00] transition-colors active:scale-[0.97]">Refresh</button>
             </div>
           </div>
         </div>
