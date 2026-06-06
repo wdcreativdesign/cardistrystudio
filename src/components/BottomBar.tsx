@@ -32,7 +32,7 @@ export function BottomBar({ settings, onChange, displayCount, onDisplayCountChan
   }
 
   return (
-    <div className="h-[72px] flex items-center justify-center gap-[8px] bg-[#111] border-t border-[#242424] flex-shrink-0">
+    <div className="h-[72px] flex items-center justify-center gap-[8px] flex-shrink-0">
 
       {/* ── LEFT: Card count cycle ── */}
       <div className="relative">

@@ -1024,11 +1024,11 @@ export default function App() {
       />
 
       {/* ── Canvas column ── */}
-      <div className="flex-1 flex flex-col min-w-0" style={{ marginTop: 72 }}>
+      <div className="flex-1 flex flex-col min-w-0 relative" style={{ marginTop: 72 }}>
 
         {/* ── Canvas viewport ── */}
         <div
-          className="flex-1 relative min-w-0 overflow-hidden"
+          className="absolute inset-0 min-w-0 overflow-hidden"
           style={{
             background: settings.bgColor === 'transparent'
               ? 'repeating-conic-gradient(#2a2a2a 0% 25%, #222 0% 50%) 0 0 / 20px 20px'
@@ -1077,7 +1077,9 @@ export default function App() {
           )}
         </div>
 
-        {/* ── Bottom bar — fixed full width, above everything ── */}
+        {/* ── Bottom bar — flottant au-dessus du canvas ── */}
+        <div className="absolute bottom-0 left-0 right-0 z-20 pointer-events-none flex items-center justify-center">
+          <div className="pointer-events-auto">
         <BottomBar
           settings={settings}
           onChange={handleChange}
@@ -1089,6 +1091,8 @@ export default function App() {
           onDeletePose={handleDeletePose}
           onRenamePose={handleRenamePose}
         />
+          </div>
+        </div>
       </div>
 
       {/* ── Right control panel ── */}
