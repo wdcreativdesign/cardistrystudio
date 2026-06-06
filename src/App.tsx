@@ -309,20 +309,26 @@ export default function App() {
   const [currentUser, setCurrentUser] = useState<User | null>(null)
   const [showLoginToast, setShowLoginToast] = useState(false)
   const [showLogoutToast, setShowLogoutToast] = useState(false)
+  const loginToastShownRef = useRef(false)
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => setCurrentUser(user))
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       setCurrentUser(session?.user ?? null)
       if (event === 'SIGNED_IN') {
         if (session?.user) identifyUser(session.user.id, session.user.email)
-        setShowLoginToast(true)
-        setTimeout(() => setShowLoginToast(false), 3500)
+        // Only show toast once per session (tab switching re-fires SIGNED_IN)
+        if (!loginToastShownRef.current) {
+          loginToastShownRef.current = true
+          setShowLoginToast(true)
+          setTimeout(() => setShowLoginToast(false), 3500)
+        }
         if (returnToExportRef.current) {
           setControlPanelTab('export')
           returnToExportRef.current = false
         }
       }
       if (event === 'SIGNED_OUT') {
+        loginToastShownRef.current = false
         setShowLogoutToast(true)
         setTimeout(() => setShowLogoutToast(false), 3500)
       }
