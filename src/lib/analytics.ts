@@ -11,7 +11,9 @@ import mixpanel from 'mixpanel-browser'
 declare global {
   interface Window {
     dataLayer: unknown[]
-    gtag:      (...args: unknown[]) => void
+    // GA4 requires the native `arguments` object — do not use rest params
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    gtag: (...args: any[]) => void
   }
 }
 
@@ -28,7 +30,8 @@ export function initGA() {
   document.head.appendChild(script)
 
   window.dataLayer = window.dataLayer ?? []
-  window.gtag = function (...args: unknown[]) { window.dataLayer.push(args) }
+  // eslint-disable-next-line prefer-rest-params
+  window.gtag = function gtag() { window.dataLayer.push(arguments) }
   window.gtag('js', new Date())
   window.gtag('config', GA_ID, { send_page_view: true })
 }
