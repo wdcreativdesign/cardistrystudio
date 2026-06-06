@@ -48,6 +48,11 @@
   50%       { box-shadow: 0 0 0 5px rgba(154, 230, 0, 0.12), 0 0 20px 6px rgba(154, 230, 0, 0.28); }
 }
 
+@keyframes feedbackSlideUp {
+  from { opacity: 0; transform: translateY(20px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0)    scale(1); }
+}
+
 @keyframes toastDropDown {
   from {
     opacity: 0;

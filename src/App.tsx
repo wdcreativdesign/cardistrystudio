@@ -9,6 +9,7 @@ import { Header } from './components/Header'
 import { LeftPanel } from './components/LeftPanel'
 import { BuyCreditsModal } from './components/BuyCreditsModal'
 import { RoadmapModal } from './components/RoadmapModal'
+import { FeedbackPromptModal } from './components/FeedbackPromptModal'
 import { SmallScreenBlock } from './components/SmallScreenBlock'
 import { LoginModal } from './components/LoginModal'
 import { type CardSettings, type CardPage, type Workspace, type Orientation, type SavedPose } from './types'
@@ -278,6 +279,16 @@ export default function App() {
   const [controlPanelTab,   setControlPanelTab]   = useState<'create' | 'export'>('create')
   const returnToExportRef = useRef(false)
   const [showRoadmap,        setShowRoadmap]        = useState(false)
+  const [showFeedbackPrompt, setShowFeedbackPrompt] = useState(false)
+
+  const triggerFeedbackIfNeeded = useCallback(() => {
+    const count = (parseInt(localStorage.getItem('cs_export_count') ?? '0', 10)) + 1
+    localStorage.setItem('cs_export_count', String(count))
+    // Show after 1st export, then every 3 (1, 4, 7, 10…)
+    if (count === 1 || (count - 1) % 3 === 0) {
+      setTimeout(() => setShowFeedbackPrompt(true), 1200)
+    }
+  }, [])
   const [creditSuccess,      setCreditSuccess]      = useState(false)
   const [sceneReady,         setSceneReady]         = useState(false)
   const [skeletonGone,       setSkeletonGone]       = useState(false)
@@ -790,6 +801,7 @@ export default function App() {
       if (shadowLayer) shadowLayer.visible = true
       camera.layers.enable(1)
       trackExport(opts.format, opts.scale)
+      triggerFeedbackIfNeeded()
       return
     } else {
       gl.render(scene, camera)
@@ -817,6 +829,7 @@ export default function App() {
 
     const ext  = isTransparent ? 'png' : opts.format
     trackExport(ext, opts.scale)
+    triggerFeedbackIfNeeded()
     const link = document.createElement('a')
     link.download = `cardistrystudio-export-${EXPORT_W}x${EXPORT_H}@${opts.scale}x.${ext}`
     link.href = dataURL; link.click()
@@ -1106,6 +1119,14 @@ export default function App() {
 
       {/* ── Roadmap modal ── */}
       {showRoadmap && <RoadmapModal onClose={() => setShowRoadmap(false)} />}
+
+      {/* ── Feedback prompt after export ── */}
+      {showFeedbackPrompt && (
+        <FeedbackPromptModal
+          currentUser={currentUser}
+          onClose={() => setShowFeedbackPrompt(false)}
+        />
+      )}
 
       {/* ── Login modal ── */}
       {showLoginModal && (
