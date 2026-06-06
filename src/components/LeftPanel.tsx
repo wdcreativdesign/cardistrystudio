@@ -159,7 +159,7 @@ function SceneRow({ workspace, index, isActive, canDelete, isDragging, dropIndic
       {renaming ? (
         <InlineRename value={workspace.name} onDone={(v) => { onRename(v); setRenaming(false) }} />
       ) : (
-        <span className="flex-1 min-w-0 text-[14px] font-medium text-white truncate">
+        <span className="flex-1 min-w-0 text-[12px] font-medium text-white truncate">
           {workspace.name}
         </span>
       )}
@@ -170,8 +170,8 @@ function SceneRow({ workspace, index, isActive, canDelete, isDragging, dropIndic
           <button
             onClick={() => setMenuOpen((o) => !o)}
             className={cn(
-              'flex items-center justify-center h-[24px] px-[4px] rounded-[4px] bg-[#242424] text-white transition-colors hover:brightness-110',
-              menuOpen && 'brightness-125',
+              'flex items-center justify-center h-[24px] px-[4px] rounded-[4px] text-white/60 transition-colors hover:text-white',
+              menuOpen && 'text-white',
             )}
           >
             <Icon name="more_horiz" size={16} />
@@ -387,19 +387,43 @@ function LayerRow({ layer, index, isDragging, dropIndicator, onDelete, onRename,
             onDone={(v) => { onRename(v); setRenaming(false) }}
           />
         ) : (
-          <span className="flex-1 min-w-0 text-[14px] font-medium text-white truncate">
+          <span className="flex-1 min-w-0 text-[12px] font-medium text-white truncate">
             {layer.name || `Layer ${index + 1}`}
           </span>
         )}
 
-        {/* Blend mode — icône opacity */}
+        {/* Opacity — pill w-[64px] bg-[#242424] */}
+        {opEditing ? (
+          <input
+            ref={opInputRef}
+            type="text"
+            value={opVal}
+            onChange={(e) => setOpVal(e.target.value)}
+            onBlur={() => commitOpacity()}
+            onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); commitOpacity() } if (e.key === 'Escape') setOpEditing(false) }}
+            className="w-[64px] h-[24px] flex-shrink-0 rounded-[4px] px-[4px] text-right text-[12px] font-medium text-white bg-[#242424] border border-[#9ae600] focus:outline-none"
+          />
+        ) : (
+          <span
+            role="button"
+            tabIndex={0}
+            onClick={() => setOpEditing(true)}
+            onKeyDown={(e) => e.key === 'Enter' && setOpEditing(true)}
+            title="Opacity"
+            className="w-[64px] h-[24px] flex-shrink-0 rounded-[4px] px-[4px] text-right text-[12px] font-medium text-white bg-[#242424] cursor-text select-none hover:brightness-110 transition-colors inline-flex items-center justify-end"
+          >
+            {layer.opacity ?? 100}%
+          </span>
+        )}
+
+        {/* Blend mode — icône opacity, pas de bg */}
         <div ref={menuRef} className="relative flex-shrink-0">
           <button
             title="Blend mode"
             onClick={() => blendOpen ? closeMenu(false) : openMenu()}
             className={cn(
-              'flex items-center justify-center h-[24px] px-[4px] rounded-[4px] bg-[#242424] text-white transition-colors hover:brightness-110',
-              blendOpen && 'brightness-125',
+              'flex items-center justify-center h-[24px] px-[4px] rounded-[4px] text-white/60 transition-colors hover:text-white',
+              blendOpen && 'text-white',
             )}
           >
             <Icon name="opacity" size={16} />
@@ -426,38 +450,14 @@ function LayerRow({ layer, index, isDragging, dropIndicator, onDelete, onRename,
           )}
         </div>
 
-        {/* Opacity — pill w-[64px] */}
-        {opEditing ? (
-          <input
-            ref={opInputRef}
-            type="text"
-            value={opVal}
-            onChange={(e) => setOpVal(e.target.value)}
-            onBlur={() => commitOpacity()}
-            onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); commitOpacity() } if (e.key === 'Escape') setOpEditing(false) }}
-            className="w-[64px] h-[24px] flex-shrink-0 rounded-[4px] px-[4px] text-right text-[12px] font-medium text-white bg-[#242424] border border-[#9ae600] focus:outline-none"
-          />
-        ) : (
-          <span
-            role="button"
-            tabIndex={0}
-            onClick={() => setOpEditing(true)}
-            onKeyDown={(e) => e.key === 'Enter' && setOpEditing(true)}
-            title="Opacity"
-            className="w-[64px] h-[24px] flex-shrink-0 rounded-[4px] px-[4px] text-right text-[12px] font-medium text-white bg-[#242424] cursor-text select-none hover:brightness-110 transition-colors inline-flex items-center justify-end"
-          >
-            {layer.opacity ?? 100}%
-          </span>
-        )}
-
-        {/* More — Rename / Remove */}
+        {/* More — Rename / Remove, pas de bg */}
         <div ref={moreRef} className="relative flex-shrink-0">
           <button
             title="Options"
             onClick={() => setMoreOpen((o) => !o)}
             className={cn(
-              'flex items-center justify-center h-[24px] px-[4px] rounded-[4px] bg-[#242424] text-white transition-colors hover:brightness-110',
-              moreOpen && 'brightness-125',
+              'flex items-center justify-center h-[24px] px-[4px] rounded-[4px] text-white/60 transition-colors hover:text-white',
+              moreOpen && 'text-white',
             )}
           >
             <Icon name="more_horiz" size={16} />
@@ -492,11 +492,13 @@ function LayerRow({ layer, index, isDragging, dropIndicator, onDelete, onRename,
 }
 
 // ── Layer drop zone (add new layer) ──────────────────────────────
-function LayerDropZone({ face, onAdd }: {
-  face:  'front' | 'back'
-  onAdd: (layer: ImageLayer) => void
+function LayerDropZone({ face, onAdd, triggerRef }: {
+  face:        'front' | 'back'
+  onAdd:       (layer: ImageLayer) => void
+  triggerRef?: React.Ref<HTMLInputElement>
 }) {
-  const inputRef = useRef<HTMLInputElement>(null)
+  const localRef = useRef<HTMLInputElement>(null)
+  const inputRef = (triggerRef ?? localRef) as React.RefObject<HTMLInputElement>
 
   const handleFile = useCallback((file: File) => {
     if (!file.type.startsWith('image/') && file.type !== 'image/svg+xml') return
@@ -519,28 +521,21 @@ function LayerDropZone({ face, onAdd }: {
   }, [handleFile])
 
   return (
-    <div
-      className="flex items-center justify-center h-[40px] w-full rounded-full bg-[#242424] cursor-pointer hover:brightness-110 transition-all"
-      onClick={() => inputRef.current?.click()}
-      onDrop={handleDrop}
-      onDragOver={(e) => e.preventDefault()}
-    >
-      <p className="text-[16px] font-medium text-white">Add layer</p>
-      <input
-        ref={inputRef}
-        type="file"
-        accept="image/*,.svg"
-        className="sr-only"
-        onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFile(f); e.target.value = '' }}
-      />
-    </div>
+    <input
+      ref={inputRef}
+      type="file"
+      accept="image/*,.svg"
+      className="sr-only"
+      onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFile(f); e.target.value = '' }}
+    />
   )
 }
 
 // ── Layers section content ────────────────────────────────────────
-function LayersSection({ settings, onChange }: {
+function LayersSection({ settings, onChange, addRef }: {
   settings: CardSettings
   onChange: (patch: Partial<CardSettings>) => void
+  addRef?:  React.Ref<HTMLInputElement>
 }) {
   const [face, setFace] = useState<'front' | 'back'>('front')
   const layers   = face === 'front' ? settings.frontLayers : settings.backLayers
@@ -635,7 +630,7 @@ function LayersSection({ settings, onChange }: {
         </div>
       )}
 
-      <LayerDropZone face={face} onAdd={handleAdd} />
+      <LayerDropZone face={face} onAdd={handleAdd} triggerRef={addRef} />
     </div>
   )
 }
@@ -665,6 +660,7 @@ export function LeftPanel({
   onSelect, onAdd, onDelete, onRename, onReorder, onChange,
 }: LeftPanelProps) {
   const [tab, setTab] = useState<'pages' | 'style'>('pages')
+  const addLayerRef = useRef<HTMLInputElement>(null)
 
   // Pages drag-and-drop
   const pageDragRef  = useRef<number | null>(null)
@@ -709,40 +705,32 @@ export function LeftPanel({
       {tab === 'pages' && (
         <>
           {/* Pages section */}
-          <PanelCard title="Pages">
-            <div className="flex flex-col gap-[16px] items-start w-full">
-              <div className="flex flex-col items-start w-full" onDragLeave={() => setPageDropTarget(null)}>
-                {workspaces.map((ws, i) => (
-                  <SceneRow
-                    key={ws.id}
-                    workspace={ws}
-                    index={i}
-                    isActive={ws.id === activeWorkspaceId}
-                    canDelete={workspaces.length > 1}
-                    isDragging={pageDragRef.current === i}
-                    dropIndicator={pageDropTarget?.index === i ? pageDropTarget.pos : null}
-                    onSelect={() => onSelect(ws.id)}
-                    onDelete={() => onDelete(ws.id)}
-                    onRename={(name) => onRename(ws.id, name)}
-                    onDragStart={handlePageDragStart}
-                    onDragOver={handlePageDragOver}
-                    onDragEnd={handlePageDragEnd}
-                    onDrop={handlePageDrop}
-                  />
-                ))}
-              </div>
-              <button
-                onClick={onAdd}
-                className="flex items-center justify-center h-[40px] w-full rounded-full bg-[#242424] hover:brightness-110 transition-all"
-              >
-                <span className="text-[16px] font-medium text-white">Add page</span>
-              </button>
+          <PanelCard title="Pages" onAdd={onAdd}>
+            <div className="flex flex-col items-start w-full" onDragLeave={() => setPageDropTarget(null)}>
+              {workspaces.map((ws, i) => (
+                <SceneRow
+                  key={ws.id}
+                  workspace={ws}
+                  index={i}
+                  isActive={ws.id === activeWorkspaceId}
+                  canDelete={workspaces.length > 1}
+                  isDragging={pageDragRef.current === i}
+                  dropIndicator={pageDropTarget?.index === i ? pageDropTarget.pos : null}
+                  onSelect={() => onSelect(ws.id)}
+                  onDelete={() => onDelete(ws.id)}
+                  onRename={(name) => onRename(ws.id, name)}
+                  onDragStart={handlePageDragStart}
+                  onDragOver={handlePageDragOver}
+                  onDragEnd={handlePageDragEnd}
+                  onDrop={handlePageDrop}
+                />
+              ))}
             </div>
           </PanelCard>
 
           {/* Layers section */}
-          <PanelCard title="Layers">
-            <LayersSection settings={activeSettings} onChange={onChange} />
+          <PanelCard title="Layers" onAdd={() => addLayerRef.current?.click()}>
+            <LayersSection settings={activeSettings} onChange={onChange} addRef={addLayerRef} />
           </PanelCard>
 
           {/* Card section */}
