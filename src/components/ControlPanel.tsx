@@ -577,24 +577,18 @@ export function ControlPanel({ settings, displayCount, onChange, onReset, onRand
       {/* ── Navigation ── */}
       <div className="h-[72px] flex items-center px-4 border-b border-white/[0.06]">
         <div className="flex gap-0.5 p-1 bg-[#252525] rounded-full w-full">
-          <button
-            onClick={() => onTabChange('create')}
-            className={cn(
-              'flex-1 text-[14px] py-[7px] rounded-full transition-all',
-              tab === 'create' ? 'bg-[#141414] text-white font-medium shadow-sm' : 'text-[#999] hover:text-white/60 font-medium',
-            )}
-          >
-            Create
-          </button>
-          <button
-            onClick={() => onTabChange('export')}
-            className={cn(
-              'flex-1 text-[14px] py-[7px] rounded-full transition-all',
-              tab === 'export' ? 'bg-[#141414] text-white font-medium shadow-sm' : 'text-[#999] hover:text-white/60 font-medium',
-            )}
-          >
-            Export
-          </button>
+          {(['create', 'export'] as const).map((t) => (
+            <button
+              key={t}
+              onClick={() => onTabChange(t)}
+              className={cn(
+                'flex-1 text-[14px] py-[7px] rounded-full transition-all',
+                tab === t ? 'bg-[#141414] text-white font-medium shadow-sm' : 'text-[#999] hover:text-white/60 font-medium',
+              )}
+            >
+              {t.charAt(0).toUpperCase() + t.slice(1)}
+            </button>
+          ))}
         </div>
       </div>
 

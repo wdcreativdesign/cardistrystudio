@@ -16,7 +16,7 @@ import { contrastColor } from './lib/utils'
 import { randomizePoses } from './lib/randomize'
 import { supabase } from './lib/supabase'
 import { useCredits, EXPORT_COST } from './hooks/useCredits'
-import { trackExport, trackOpenBuyCredits, trackPurchase, trackSignOut } from './lib/analytics'
+import { trackExport, trackOpenBuyCredits, trackPurchase, trackSignOut, identifyUser } from './lib/analytics'
 import { DEFAULT_FRONT_URL } from './constants'
 
 /* ── Default card settings ───────────────────────────────────────── */
@@ -235,6 +235,34 @@ function DotBackground() {
   )
 }
 
+/* ── Gradient helper — peint un fond dégradé sur un ctx 2D ─────── */
+function drawGradientRect(ctx: CanvasRenderingContext2D, bgColor: string, w: number, h: number) {
+  const lin = bgColor.match(/linear-gradient\((\d+)deg,\s*(#[0-9a-fA-F]{6}),\s*(#[0-9a-fA-F]{6})\)/)
+  if (lin) {
+    const angle = parseInt(lin[1])
+    const c1 = lin[2], c2 = lin[3]
+    const rad = (angle * Math.PI) / 180
+    const dX = Math.sin(rad), dY = -Math.cos(rad)
+    const len = Math.abs(w * dX) + Math.abs(h * dY)
+    const x1 = w / 2 - dX * len / 2, y1 = h / 2 - dY * len / 2
+    const x2 = w / 2 + dX * len / 2, y2 = h / 2 + dY * len / 2
+    const g = ctx.createLinearGradient(x1, y1, x2, y2)
+    g.addColorStop(0, c1); g.addColorStop(1, c2)
+    ctx.fillStyle = g
+  } else {
+    const rad = bgColor.match(/radial-gradient\(circle,\s*(#[0-9a-fA-F]{6}),\s*(#[0-9a-fA-F]{6})\)/)
+    if (rad) {
+      const c1 = rad[1], c2 = rad[2]
+      const g = ctx.createRadialGradient(w / 2, h / 2, 0, w / 2, h / 2, Math.max(w, h) / 2)
+      g.addColorStop(0, c1); g.addColorStop(1, c2)
+      ctx.fillStyle = g
+    } else {
+      ctx.fillStyle = bgColor
+    }
+  }
+  ctx.fillRect(0, 0, w, h)
+}
+
 /* ── App ─────────────────────────────────────────────────────────── */
 export default function App() {
   const _init = loadWorkspaces()
@@ -275,6 +303,7 @@ export default function App() {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       setCurrentUser(session?.user ?? null)
       if (event === 'SIGNED_IN') {
+        if (session?.user) identifyUser(session.user.id, session.user.email)
         setShowLoginToast(true)
         setTimeout(() => setShowLoginToast(false), 3500)
         if (returnToExportRef.current) {
@@ -617,24 +646,16 @@ export default function App() {
       gl.setClearColor(savedColor, savedAlpha)
       if (bgLayers) bgLayers.visible = true
     } else if (isGradient) {
-      const savedColor = new THREE.Color()
-      gl.getClearColor(savedColor)
-      const savedAlpha = gl.getClearAlpha()
       gl.setClearColor(0x000000, 0)
       gl.clear()
       gl.render(scene, camera)
-      const sceneDataUrl = gl.domElement.toDataURL('image/png', 0.85)
-      gl.setClearColor(savedColor, savedAlpha)
       const comp = document.createElement('canvas')
       comp.width  = EXPORT_W
       comp.height = EXPORT_H
       const ctx = comp.getContext('2d')!
-      ctx.fillStyle = bgColor
-      ctx.fillRect(0, 0, EXPORT_W, EXPORT_H)
-      const img = new Image()
-      img.src = sceneDataUrl
-      /* Synchronous draw — image is already decoded since it's a data URL */
-      ctx.drawImage(img, 0, 0, EXPORT_W, EXPORT_H)
+      drawGradientRect(ctx, bgColor, EXPORT_W, EXPORT_H)
+      // drawImage depuis le canvas WebGL directement = synchrone, pas besoin de toDataURL
+      ctx.drawImage(gl.domElement, 0, 0, EXPORT_W, EXPORT_H)
       dataUrl = comp.toDataURL('image/png', 0.85)
     } else {
       gl.render(scene, camera)
@@ -741,8 +762,7 @@ export default function App() {
       comp.width  = exportW
       comp.height = exportH
       const ctx = comp.getContext('2d')!
-      ctx.fillStyle = bgColor
-      ctx.fillRect(0, 0, exportW, exportH)
+      drawGradientRect(ctx, bgColor, exportW, exportH)
       const img = new Image()
       img.src = sceneDataUrl
       img.onload = () => {
@@ -922,7 +942,7 @@ export default function App() {
   }, [flushDrag])
 
   /* ── Render ── */
-  if (screenTooSmall) return <SmallScreenBlock />
+  if (screenTooSmall) return <SmallScreenBlock currentUser={currentUser} />
 
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-[#141414]">
@@ -1039,19 +1059,19 @@ export default function App() {
       {showReloadConfirm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           <div className="absolute inset-0 bg-black/50 backdrop-blur-[2px]" onClick={() => setShowReloadConfirm(false)} />
-          <div className="relative bg-[#1a1a1a] rounded-2xl shadow-2xl border border-white/[0.07] p-6 w-[360px] mx-4 animate-in fade-in zoom-in-95 duration-150">
-            <div className="flex items-start gap-3.5 mb-5">
-              <div className="w-9 h-9 rounded-xl bg-[#9AE600]/10 flex items-center justify-center flex-shrink-0 mt-0.5">
-                <Icon name="warning" size={20} className="text-[#9AE600]" />
+          <div className="relative bg-[#111] border border-[#242424] rounded-[24px] shadow-[0px_8px_12px_rgba(0,0,0,0.32)] p-6 w-[380px] mx-4 flex flex-col gap-6 animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex items-start justify-between w-full">
+              <div className="flex flex-col gap-2 w-[277px]">
+                <p className="text-[16px] font-medium text-white leading-normal">Lose your progress?</p>
+                <p className="text-[14px] font-medium text-[#999] leading-normal">Refreshing will reset your current design.<br/>Any unsaved work will be lost.</p>
               </div>
-              <div>
-                <h3 className="text-[15px] font-semibold text-white/85 mb-1.5">Lose your progress?</h3>
-                <p className="text-[13px] text-white/50 leading-relaxed">Refreshing will reset your current design. Any unsaved work will be lost.</p>
-              </div>
+              <button onClick={() => setShowReloadConfirm(false)} className="text-white hover:text-white/60 transition-colors flex-shrink-0">
+                <Icon name="close" size={20} />
+              </button>
             </div>
-            <div className="flex gap-2.5 justify-end">
-              <button onClick={() => setShowReloadConfirm(false)} className="px-4 py-2 rounded-full text-[13px] font-medium text-white/55 hover:text-white/80 bg-[#252525] hover:bg-[#2e2e2e] border border-white/[0.08] transition-all">Keep editing</button>
-              <button onClick={() => window.location.reload()} className="px-4 py-2 rounded-full text-[13px] font-medium bg-[#9AE600] hover:bg-[#aaff00] text-[#0d0d0d] transition-all rounded-full active:scale-[0.97]">Refresh anyway</button>
+            <div className="flex gap-4 w-full">
+              <button onClick={() => setShowReloadConfirm(false)} className="flex-1 h-[41px] flex items-center justify-center px-6 rounded-full bg-[#242424] text-white text-[16px] font-medium hover:bg-[#2e2e2e] transition-colors">Keep editing</button>
+              <button onClick={() => window.location.reload()} className="flex-1 h-[41px] flex items-center justify-center px-6 rounded-full bg-[#9ae600] text-[#111] text-[16px] font-medium hover:bg-[#aaff00] transition-colors active:scale-[0.97]">Refresh anyway</button>
             </div>
           </div>
         </div>
@@ -1061,23 +1081,21 @@ export default function App() {
       {pendingOrientation && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           <div className="absolute inset-0 bg-black/50 backdrop-blur-[2px]" onClick={cancelOrientationChange} />
-          <div className="relative bg-[#1a1a1a] rounded-2xl shadow-2xl border border-white/[0.07] p-6 w-[360px] mx-4 animate-in fade-in zoom-in-95 duration-150">
-            <div className="flex items-start gap-3.5 mb-5">
-              <div className="w-9 h-9 rounded-xl bg-[#9AE600]/10 flex items-center justify-center flex-shrink-0 mt-0.5">
-                <Icon name="warning" size={20} className="text-[#9AE600]" />
-              </div>
-              <div>
-                <h3 className="text-[15px] font-semibold text-white/85 mb-1.5">Change orientation?</h3>
-                <p className="text-[13px] text-white/50 leading-relaxed">
-                  Switching to{' '}
-                  <span className="font-medium text-white/65 capitalize">{pendingOrientation}</span>{' '}
-                  will remove your imported images — they won't match the new card format.
+          <div className="relative bg-[#111] border border-[#242424] rounded-[24px] shadow-[0px_8px_12px_rgba(0,0,0,0.32)] p-6 w-[380px] mx-4 flex flex-col gap-6 animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex items-start justify-between w-full">
+              <div className="flex flex-col gap-2 w-[277px]">
+                <p className="text-[16px] font-medium text-white leading-normal">Change orientation?</p>
+                <p className="text-[14px] font-medium text-[#999] leading-normal">
+                  Switching to <span className="capitalize">{pendingOrientation}</span> will remove your imported images – they won't match the new card format.
                 </p>
               </div>
+              <button onClick={cancelOrientationChange} className="text-white hover:text-white/60 transition-colors flex-shrink-0">
+                <Icon name="close" size={20} />
+              </button>
             </div>
-            <div className="flex gap-2.5 justify-end">
-              <button onClick={cancelOrientationChange} className="px-4 py-2 rounded-full text-[13px] font-medium text-white/55 hover:text-white/80 bg-[#252525] hover:bg-[#2e2e2e] border border-white/[0.08] transition-all">Cancel</button>
-              <button onClick={confirmOrientationChange} className="px-4 py-2 rounded-full text-[13px] font-medium bg-[#9AE600] hover:bg-[#aaff00] text-[#0d0d0d] transition-all rounded-full active:scale-[0.97]">Continue</button>
+            <div className="flex gap-4 w-full">
+              <button onClick={cancelOrientationChange} className="flex-1 h-[41px] flex items-center justify-center px-6 rounded-full bg-[#242424] text-white text-[16px] font-medium hover:bg-[#2e2e2e] transition-colors">Cancel</button>
+              <button onClick={confirmOrientationChange} className="flex-1 h-[41px] flex items-center justify-center px-6 rounded-full bg-[#9ae600] text-[#111] text-[16px] font-medium hover:bg-[#aaff00] transition-colors active:scale-[0.97]">Continue</button>
             </div>
           </div>
         </div>

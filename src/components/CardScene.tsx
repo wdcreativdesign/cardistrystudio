@@ -96,6 +96,9 @@ function ToneMapping() {
   useEffect(() => {
     gl.toneMapping         = THREE.ACESFilmicToneMapping
     gl.toneMappingExposure = 1.05
+    // Ensure WebGL clears to fully transparent so CSS gradients show through
+    gl.setClearColor(new THREE.Color(0x000000), 0)
+    gl.domElement.style.background = 'transparent'
   }, [gl])
   return null
 }
