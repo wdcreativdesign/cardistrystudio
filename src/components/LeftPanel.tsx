@@ -92,13 +92,23 @@ function InlineRename({ value, onDone }: { value: string; onDone: (v: string) =>
 }
 
 // ── Scene row ─────────────────────────────────────────────────────
-function SceneRow({ workspace, isActive, canDelete, onSelect, onDelete, onRename }: {
-  workspace: Workspace
-  isActive:  boolean
-  canDelete: boolean
-  onSelect:  () => void
-  onDelete:  () => void
-  onRename:  (name: string) => void
+function SceneRow({ workspace, index, isActive, canDelete, isDragging, dropIndicator,
+  onSelect, onDelete, onRename,
+  onDragStart, onDragOver, onDragEnd, onDrop,
+}: {
+  workspace:     Workspace
+  index:         number
+  isActive:      boolean
+  canDelete:     boolean
+  isDragging:    boolean
+  dropIndicator: 'before' | 'after' | null
+  onSelect:      () => void
+  onDelete:      () => void
+  onRename:      (name: string) => void
+  onDragStart:   (i: number) => void
+  onDragOver:    (e: React.DragEvent, i: number) => void
+  onDragEnd:     () => void
+  onDrop:        (e: React.DragEvent) => void
 }) {
   const [renaming, setRenaming] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
@@ -115,12 +125,29 @@ function SceneRow({ workspace, isActive, canDelete, onSelect, onDelete, onRename
 
   return (
     <div
-      className={cn(
-        'flex gap-[8px] items-center p-[8px] rounded-[8px] w-full cursor-pointer select-none',
-        isActive ? 'bg-white/[0.06]' : 'hover:bg-white/[0.04]',
-      )}
-      onClick={onSelect}
+      className="relative w-full"
+      draggable
+      onDragStart={() => onDragStart(index)}
+      onDragOver={(e) => onDragOver(e, index)}
+      onDragEnter={(e) => {
+        const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
+        onDragOver(e, index)
+        void rect
+      }}
+      onDragEnd={onDragEnd}
+      onDrop={onDrop}
     >
+      {dropIndicator === 'before' && (
+        <div className="absolute top-0 left-0 right-0 h-[2px] bg-[#9ae600] rounded-full -translate-y-[1px] z-10 pointer-events-none" />
+      )}
+      <div
+        className={cn(
+          'flex gap-[8px] items-center p-[8px] rounded-[8px] w-full cursor-pointer select-none',
+          isDragging && 'opacity-30',
+          isActive ? 'bg-white/[0.06]' : 'hover:bg-white/[0.04]',
+        )}
+        onClick={onSelect}
+      >
       {/* Drag handle */}
       {!renaming && (
         <span className="text-white/30 hover:text-white/70 transition-colors cursor-grab active:cursor-grabbing flex-shrink-0 select-none">
@@ -170,6 +197,10 @@ function SceneRow({ workspace, isActive, canDelete, onSelect, onDelete, onRename
             </div>
           )}
         </div>
+      )}
+      </div>
+      {dropIndicator === 'after' && (
+        <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-[#9ae600] rounded-full translate-y-[1px] z-10 pointer-events-none" />
       )}
     </div>
   )
@@ -618,6 +649,7 @@ interface LeftPanelProps {
   onAdd:             () => void
   onDelete:          (id: string) => void
   onRename:          (id: string, name: string) => void
+  onReorder:         (ordered: Workspace[]) => void
   onChange:          (patch: Partial<CardSettings>) => void
   // legacy
   savedPoses?:       unknown
@@ -630,9 +662,34 @@ interface LeftPanelProps {
 
 export function LeftPanel({
   workspaces, activeWorkspaceId, activeSettings,
-  onSelect, onAdd, onDelete, onRename, onChange,
+  onSelect, onAdd, onDelete, onRename, onReorder, onChange,
 }: LeftPanelProps) {
   const [tab, setTab] = useState<'pages' | 'style'>('pages')
+
+  // Pages drag-and-drop
+  const pageDragRef  = useRef<number | null>(null)
+  const [pageDropTarget, setPageDropTarget] = useState<{ index: number; pos: 'before' | 'after' } | null>(null)
+
+  function handlePageDragStart(i: number) { pageDragRef.current = i }
+  function handlePageDragOver(e: React.DragEvent, i: number) {
+    e.preventDefault()
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
+    setPageDropTarget({ index: i, pos: e.clientY < rect.top + rect.height / 2 ? 'before' : 'after' })
+  }
+  function handlePageDragEnd() { pageDragRef.current = null; setPageDropTarget(null) }
+  function handlePageDrop(e: React.DragEvent) {
+    e.preventDefault()
+    const from = pageDragRef.current
+    if (from === null || !pageDropTarget) return
+    const to = pageDropTarget.index
+    if (from === to) { handlePageDragEnd(); return }
+    const next = [...workspaces]
+    const [moved] = next.splice(from, 1)
+    const insertAt = pageDropTarget.pos === 'after' ? (from < to ? to : to + 1) : (from < to ? to - 1 : to)
+    next.splice(Math.max(0, insertAt), 0, moved)
+    onReorder(next)
+    handlePageDragEnd()
+  }
 
   return (
     <div
@@ -654,16 +711,23 @@ export function LeftPanel({
           {/* Pages section */}
           <PanelCard title="Pages">
             <div className="flex flex-col gap-[16px] items-start w-full">
-              <div className="flex flex-col items-start w-full">
-                {workspaces.map((ws) => (
+              <div className="flex flex-col items-start w-full" onDragLeave={() => setPageDropTarget(null)}>
+                {workspaces.map((ws, i) => (
                   <SceneRow
                     key={ws.id}
                     workspace={ws}
+                    index={i}
                     isActive={ws.id === activeWorkspaceId}
                     canDelete={workspaces.length > 1}
+                    isDragging={pageDragRef.current === i}
+                    dropIndicator={pageDropTarget?.index === i ? pageDropTarget.pos : null}
                     onSelect={() => onSelect(ws.id)}
                     onDelete={() => onDelete(ws.id)}
                     onRename={(name) => onRename(ws.id, name)}
+                    onDragStart={handlePageDragStart}
+                    onDragOver={handlePageDragOver}
+                    onDragEnd={handlePageDragEnd}
+                    onDrop={handlePageDrop}
                   />
                 ))}
               </div>

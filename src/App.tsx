@@ -631,6 +631,10 @@ export default function App() {
     setWorkspaces((prev) => prev.map((w) => w.id === id ? { ...w, name } : w))
   }, [])
 
+  const handleReorderWorkspaces = useCallback((ordered: Workspace[]) => {
+    setWorkspaces(ordered)
+  }, [])
+
   /* ── Capture preview (used by ExportTab thumbnail) ── */
   const capturePreview = useCallback((opts?: { showShadow?: boolean }): { dataUrl: string; cssW: number; cssH: number } | null => {
     const gl     = glRef.current
@@ -1015,6 +1019,7 @@ export default function App() {
         onAdd={handleAddWorkspace}
         onDelete={handleDeleteWorkspace}
         onRename={handleRenameWorkspace}
+        onReorder={handleReorderWorkspaces}
         onChange={handleChange}
       />
 
