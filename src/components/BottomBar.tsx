@@ -32,7 +32,7 @@ export function BottomBar({ settings, onChange, displayCount, onDisplayCountChan
   }
 
   return (
-    <div className="h-[72px] flex items-center justify-center gap-2 bg-[#111] border-t border-[#242424] flex-shrink-0">
+    <div className="h-[72px] flex items-center justify-center gap-[8px] bg-[#111] border-t border-[#242424] flex-shrink-0">
 
       {/* ── LEFT: Card count cycle ── */}
       <div className="relative">
@@ -45,14 +45,14 @@ export function BottomBar({ settings, onChange, displayCount, onDisplayCountChan
           onClick={cycleCount}
           onMouseEnter={() => setCountTooltip(true)}
           onMouseLeave={() => setCountTooltip(false)}
-          className="w-10 h-10 flex items-center justify-center rounded-full bg-[#252525] text-white/55 hover:text-white/80 hover:bg-[#2e2e2e] transition-all active:scale-95"
+          className="size-[40px] flex items-center justify-center rounded-full bg-[#141414] text-white hover:brightness-110 transition-all active:scale-95"
         >
-          <Icon name="style" size={18} />
+          <Icon name="style" size={20} />
         </button>
       </div>
 
       {/* ── CENTER: Orientation segmented control ── */}
-      <div className="flex gap-0.5 p-1 bg-[#252525] rounded-full">
+      <div className="flex p-[4px] bg-[#141414] rounded-full h-[40px] items-center">
         {ORIENTATIONS.map((o) => {
           const active = settings.orientation === o.key
           return (
@@ -60,8 +60,8 @@ export function BottomBar({ settings, onChange, displayCount, onDisplayCountChan
               key={o.key}
               onClick={() => onChange({ orientation: o.key })}
               className={cn(
-                'px-4 py-[7px] rounded-full text-[13px] transition-all duration-200 select-none',
-                active ? 'bg-[#141414] text-white font-semibold shadow-sm' : 'text-white/40 hover:text-white/65 font-medium',
+                'px-[12px] h-[32px] rounded-full text-[14px] font-medium transition-all duration-200 select-none',
+                active ? 'bg-[#242424] text-white' : 'text-[#999] hover:text-white',
               )}
             >
               {o.label}
@@ -76,9 +76,9 @@ export function BottomBar({ settings, onChange, displayCount, onDisplayCountChan
           ref={posesButtonRef}
           onClick={() => setPosesOpen((o) => !o)}
           title="Saved poses"
-          className="w-10 h-10 flex items-center justify-center rounded-full bg-[#252525] text-white/55 hover:text-white/80 hover:bg-[#2e2e2e] transition-all active:scale-95"
+          className="size-[40px] flex items-center justify-center rounded-full bg-[#141414] text-white hover:brightness-110 transition-all active:scale-95"
         >
-          <Icon name="bookmark" size={18} filled={posesOpen} />
+          <Icon name="bookmark" size={20} filled={posesOpen} />
         </button>
 
         {posesOpen && (
