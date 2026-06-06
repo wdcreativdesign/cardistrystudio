@@ -629,12 +629,10 @@ export default function App() {
     const bgLayers    = scene.getObjectByName('bg-layers')
     const shadowLayer = scene.getObjectByName('shadow-layer')
 
-    /* Collect all selection-glow groups (one per card in multi-card mode) */
-    const glowGroups: THREE.Object3D[] = []
-    scene.traverse((obj) => { if (obj.name === 'selection-glow') glowGroups.push(obj) })
+    /* Hide selection dots — they live on layer 1, disable it on the camera */
+    camera.layers.disable(1)
 
     if (shadowLayer && !showShadow) shadowLayer.visible = false
-    glowGroups.forEach((g) => { g.visible = false })
 
     let dataUrl: string
 
@@ -669,9 +667,9 @@ export default function App() {
       dataUrl = gl.domElement.toDataURL('image/png', 0.85)
     }
 
-    /* Restore shadow + glow */
+    /* Restore shadow + selection layer */
     if (shadowLayer) shadowLayer.visible = true
-    glowGroups.forEach((g) => { g.visible = true })
+    camera.layers.enable(1)
 
     /* Restore renderer + camera */
     gl.setPixelRatio(origDpr)
@@ -724,17 +722,15 @@ export default function App() {
     const bgLayers    = scene.getObjectByName('bg-layers')
     const shadowLayer  = scene.getObjectByName('shadow-layer')
 
-    /* Collect all selection-glow groups (one per card in multi-card mode) */
-    const glowGroups: THREE.Object3D[] = []
-    scene.traverse((obj) => { if (obj.name === 'selection-glow') glowGroups.push(obj) })
+    /* Hide selection dots — disable layer 1 on camera */
+    camera.layers.disable(1)
 
     /* Resize to fixed export dimensions */
     gl.setPixelRatio(opts.scale)
     gl.setSize(EXPORT_W, EXPORT_H, false)
 
-    /* Apply shadow visibility + always hide selection glow */
+    /* Apply shadow visibility */
     if (shadowLayer && !opts.showShadow) shadowLayer.visible = false
-    glowGroups.forEach((g) => { g.visible = false })
 
     let dataURL: string
 
@@ -792,7 +788,7 @@ export default function App() {
       }
       gl.render(scene, camera)
       if (shadowLayer) shadowLayer.visible = true
-      glowGroups.forEach((g) => { g.visible = true })
+      camera.layers.enable(1)
       trackExport(opts.format, opts.scale)
       return
     } else {
@@ -802,9 +798,9 @@ export default function App() {
       dataURL = gl.domElement.toDataURL(mimeType, quality)
     }
 
-    /* Restore shadow + glow */
+    /* Restore shadow + selection layer */
     if (shadowLayer) shadowLayer.visible = true
-    glowGroups.forEach((g) => { g.visible = true })
+    camera.layers.enable(1)
 
     /* Restore canvas size + camera */
     gl.setPixelRatio(origDpr)
