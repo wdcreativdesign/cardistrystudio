@@ -47,7 +47,7 @@ export function FeedbackPromptModal({ currentUser, onClose }: Props) {
             {/* Header */}
             <div className="flex items-start justify-between gap-3 mb-5">
               <div>
-                <p className="text-[16px] font-semibold text-white">How was your export?</p>
+                <p className="text-[16px] font-semibold text-white">How was your experience?</p>
                 <p className="text-[12px] text-[#555] mt-0.5">Your feedback helps improve CardistryStudio.</p>
               </div>
               <button
