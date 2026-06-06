@@ -606,6 +606,10 @@ export default function App() {
     setActiveWorkspaceId(id)
   }, [])
 
+  const handleRenameWorkspace = useCallback((id: string, name: string) => {
+    setWorkspaces((prev) => prev.map((w) => w.id === id ? { ...w, name } : w))
+  }, [])
+
   /* ── Capture preview (used by ExportTab thumbnail) ── */
   const capturePreview = useCallback((opts?: { showShadow?: boolean }): { dataUrl: string; cssW: number; cssH: number } | null => {
     const gl     = glRef.current
@@ -969,19 +973,15 @@ export default function App() {
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-[#141414]">
 
-      {/* ── Left panel — workspaces ── */}
+      {/* ── Left panel — pages + layers ── */}
       <LeftPanel
         workspaces={workspaces}
         activeWorkspaceId={activeWorkspaceId}
+        activeSettings={settings}
         onSelect={handleSelectWorkspace}
         onAdd={handleAddWorkspace}
         onDelete={handleDeleteWorkspace}
-        savedPoses={savedPoses}
-        currentSettings={settings}
-        onSavePose={handleSavePose}
-        onApplyPose={handleApplyPose}
-        onDeletePose={handleDeletePose}
-        onRenamePose={handleRenamePose}
+        onRename={handleRenameWorkspace}
       />
 
       {/* ── Canvas column (header + viewport) ── */}
