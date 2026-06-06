@@ -424,6 +424,53 @@ function BgSection({ value, onChange }: { value: string; onChange: (v: string) =
 type ExportFormat = 'png' | 'jpg'
 type CaptureResult = { dataUrl: string; cssW: number; cssH: number }
 
+/* ─── Magnetic + Glowing Export Button ──────────────────────────── */
+function AuroraExportButton({ format, onExport }: { format: ExportFormat; onExport: () => void }) {
+  const wrapRef = useRef<HTMLDivElement>(null)
+  const btnRef  = useRef<HTMLButtonElement>(null)
+  const rafRef  = useRef<number | null>(null)
+
+  const handleMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    if (rafRef.current) cancelAnimationFrame(rafRef.current)
+    rafRef.current = requestAnimationFrame(() => {
+      const btn = btnRef.current
+      if (!btn) return
+      const rect = btn.getBoundingClientRect()
+      const cx = rect.left + rect.width  / 2
+      const cy = rect.top  + rect.height / 2
+      // Magnetic pull — max 6px
+      const dx = (e.clientX - cx) / (rect.width  / 2)
+      const dy = (e.clientY - cy) / (rect.height / 2)
+      btn.style.transform = `translate(${dx * 6}px, ${dy * 4}px)`
+    })
+  }, [])
+
+  const handleMouseLeave = useCallback(() => {
+    if (btnRef.current) {
+      btnRef.current.style.transition = 'transform 0.5s cubic-bezier(0.23, 1, 0.32, 1), box-shadow 0.6s ease'
+      btnRef.current.style.transform  = 'translate(0px, 0px)'
+    }
+  }, [])
+
+  return (
+    <div
+      ref={wrapRef}
+      className="magnetic-wrap w-full"
+      onMouseMove={handleMouseMove}
+      onMouseLeave={handleMouseLeave}
+    >
+      <button
+        ref={btnRef}
+        onClick={onExport}
+        className="magnetic-btn w-full flex items-center justify-center gap-2 text-[#111] text-[13px] font-semibold py-3 rounded-full"
+      >
+        <Icon name="download" size={18} />
+        Export {format.toUpperCase()}
+      </button>
+    </div>
+  )
+}
+
 function ExportTab({
   settings, onChange, onExport, onCapturePreview,
 }: {
@@ -541,17 +588,9 @@ function ExportTab({
       </Section>
 
       {/* Export button */}
-      <div className="px-4 py-4">
-        <button
-          onClick={() => onExport({ format, scale, showShadow })}
-          className="relative w-full flex items-center justify-center gap-2 bg-[#9AE600] hover:bg-[#aaff00] text-[#0d0d0d] text-[13px] font-semibold py-3 rounded-full transition-all active:scale-[0.98]"
-        >
-          <Icon name="download" size={18} />
-          Export {format.toUpperCase()}
-          <span className="absolute right-3.5 flex items-center gap-1 bg-black/15 rounded-lg px-2 py-1 text-[10px] text-[#0d0d0d]/60 font-medium">
-            <Icon name="bolt" size={14} />5
-          </span>
-        </button>
+      <div className="px-4 py-4 flex flex-col items-center gap-1.5">
+        <AuroraExportButton format={format} onExport={() => onExport({ format, scale, showShadow })} />
+        <p className="text-[11px] text-[#555] font-medium">Cost 5 tokens</p>
       </div>
     </div>
   )
