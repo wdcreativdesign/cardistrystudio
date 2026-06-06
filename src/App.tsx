@@ -68,7 +68,7 @@ async function loadDefaultCardImage(): Promise<string | null> {
 
 function makeInitWorkspace(): Workspace {
   const page: CardPage = { id: INIT_PAGE_ID, name: 'Card 1', settings: { ...DEFAULT_SETTINGS } }
-  return { id: INIT_WS_ID, name: 'Workspace 1', displayCount: 1, pages: [page], activePageId: INIT_PAGE_ID }
+  return { id: INIT_WS_ID, name: 'Page01', displayCount: 1, pages: [page], activePageId: INIT_PAGE_ID }
 }
 
 function makeId() { return Math.random().toString(36).slice(2, 9) }
@@ -605,7 +605,7 @@ export default function App() {
     const page: CardPage = { id: makeId(), name: 'Card 1', settings: { ...DEFAULT_SETTINGS } }
     const ws: Workspace  = {
       id:           makeId(),
-      name:         `Workspace ${workspaces.length + 1}`,
+      name:         `Page${String(workspaces.length + 1).padStart(2, '0')}`,
       displayCount: 1,
       pages:        [page],
       activePageId: page.id,
