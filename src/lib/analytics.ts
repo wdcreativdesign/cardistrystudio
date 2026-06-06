@@ -35,7 +35,12 @@ export function initGA() {
 
 export function initMixpanel() {
   if (!MP_TOKEN) return
-  mixpanel.init(MP_TOKEN, { persistence: 'localStorage', track_pageview: true, debug: import.meta.env.DEV })
+  mixpanel.init(MP_TOKEN, {
+    persistence: 'localStorage',
+    track_pageview: true,
+    debug: import.meta.env.DEV,
+    api_host: 'https://api-eu.mixpanel.com',
+  })
 }
 
 /* ── Event helper ──────────────────────────────────────────────────── */
