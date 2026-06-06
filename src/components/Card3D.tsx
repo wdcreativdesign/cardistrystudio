@@ -405,11 +405,13 @@ export function Card3D({ settings, tilt, isActive = false }: Card3DProps) {
           <planeGeometry args={[CHIP_W, CHIP_H]} />
           <meshPhysicalMaterial
             map={chipTex}
-            metalness={0.55}
-            roughness={0.35}
-            clearcoat={0.6}
-            clearcoatRoughness={0.15}
-            envMapIntensity={1.2}
+            transparent
+            alphaTest={0.05}
+            metalness={0.92}
+            roughness={0.18}
+            clearcoat={0.9}
+            clearcoatRoughness={0.08}
+            envMapIntensity={2.0}
           />
         </mesh>
       )}
