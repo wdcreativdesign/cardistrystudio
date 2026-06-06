@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useCallback } from 'react'
 import { Icon } from '@/components/ui/icon'
 import { supabase } from '@/lib/supabase'
 import { cn } from '@/lib/utils'
+import { AnimatedLogo } from '@/components/AnimatedLogo'
 
 type MenuView     = 'main' | 'feedback'
 type FeedbackStep = 'form' | 'sending' | 'done' | 'error'
@@ -28,6 +29,7 @@ export function Header({
   onSignIn,
   userEmail,
 }: HeaderProps) {
+  const [logoAnimDone, setLogoAnimDone] = useState(false)
   const [menuOpen,    setMenuOpen]    = useState(false)
   const [view,        setView]        = useState<MenuView>('main')
   const [fbStep,      setFbStep]      = useState<FeedbackStep>('form')
@@ -82,10 +84,14 @@ export function Header({
         onClick={onLogoClick}
         className="flex items-center gap-3 transition-opacity hover:opacity-70 active:scale-[0.97] cursor-pointer bg-transparent border-none p-0"
       >
-        <img src="/favicon.svg" alt="CardistryStudio" className="w-8 h-8 flex-shrink-0" />
-        <span className="text-[18px] text-white leading-none">
-          <span className="font-semibold">Cardistry</span>
-          <span className="font-normal">Studio</span>
+        <AnimatedLogo onEnded={() => setLogoAnimDone(true)} />
+        <span className="text-[18px] text-white leading-none flex items-end gap-[0.18em]">
+          <span className={logoAnimDone ? 'logo-word' : 'logo-word-hidden'}>
+            <span className="font-semibold">Cardistry</span>
+          </span>
+          <span className={logoAnimDone ? 'logo-word' : 'logo-word-hidden'}>
+            <span className="font-normal">Studio</span>
+          </span>
         </span>
       </button>
 

@@ -2,6 +2,39 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ── Logo text word reveal ──────────────────────────────────── */
+.logo-word-hidden {
+  display: inline-block;
+  overflow: hidden;
+  vertical-align: bottom;
+  visibility: hidden;
+}
+
+.logo-word {
+  display: inline-block;
+  overflow: hidden;
+  vertical-align: bottom;
+}
+
+.logo-word span {
+  display: inline-block;
+  animation: word-slide-up 0.55s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.logo-word:nth-child(1) span { animation-delay: 0.15s; }
+.logo-word:nth-child(2) span { animation-delay: 0.28s; }
+
+@keyframes word-slide-up {
+  from {
+    transform: translateY(110%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0%);
+    opacity: 1;
+  }
+}
+
 /* ── Magnetic + Pulse export button ──────────────────────────── */
 .magnetic-wrap {
   position: relative;
