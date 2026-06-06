@@ -19,7 +19,7 @@ export function AnimatedLogo({ onEnded }: Props) {
         src="/favicon.svg"
         alt="CardistryStudio"
         className="w-8 h-8 absolute inset-0"
-        style={{ opacity: done ? 1 : 0, transition: 'opacity 0.2s ease' }}
+        style={{ opacity: done ? 1 : 0 }}
       />
       {!done && (
         <video
