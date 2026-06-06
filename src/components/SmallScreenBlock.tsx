@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { type User } from '@supabase/supabase-js'
 import { supabase } from '@/lib/supabase'
+import { trackMagicLinkSent, trackBuyWideScreenClick } from '@/lib/analytics'
 
 // Remplace par l'ID de la vidéo YouTube quand dispo (ex: "dQw4w9WgXcQ")
 const DEMO_VIDEO_ID: string | null = null
@@ -15,6 +16,7 @@ export function SmallScreenBlock({ currentUser }: { currentUser: User | null }) 
     if (!trimmed || loading) return
     setLoading(true)
     await supabase.auth.signInWithOtp({ email: trimmed, options: { shouldCreateUser: true } })
+    trackMagicLinkSent()
     setSent(true)
     setLoading(false)
   }
@@ -60,6 +62,7 @@ export function SmallScreenBlock({ currentUser }: { currentUser: User | null }) 
             href="https://www.amazon.com/s?k=wide+screen+monitor"
             target="_blank"
             rel="noopener noreferrer"
+            onClick={trackBuyWideScreenClick}
             className="h-[41px] px-6 bg-[#242424] hover:bg-[#2e2e2e] rounded-full flex items-center justify-center text-[16px] font-medium text-white transition-all active:scale-95"
           >
             Buy a wide screen

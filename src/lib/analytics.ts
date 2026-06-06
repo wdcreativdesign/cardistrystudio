@@ -92,3 +92,43 @@ export function trackSignOut() {
   trackEvent('sign_out')
   resetUser()
 }
+
+export function trackMagicLinkSent() {
+  trackEvent('magic_link_sent')
+}
+
+export function trackBuyWideScreenClick() {
+  trackEvent('buy_wide_screen_click')
+}
+
+export function trackRandomize() {
+  trackEvent('randomize')
+}
+
+export function trackReset() {
+  trackEvent('reset_card')
+}
+
+export function trackDisplayCountChange(count: number) {
+  trackEvent('display_count_change', { count })
+}
+
+export function trackOrientationChange(orientation: string) {
+  trackEvent('orientation_change', { orientation })
+}
+
+export function trackImageUpload(side: 'front' | 'back' | 'paste') {
+  trackEvent('image_upload', { side })
+}
+
+export function trackTabSwitch(tab: string) {
+  trackEvent('tab_switch', { tab })
+}
+
+export function trackCameraModeChange(mode: string) {
+  trackEvent('camera_mode_change', { mode })
+}
+
+export function trackAddWorkspace() {
+  trackEvent('add_workspace')
+}

@@ -1,4 +1,5 @@
 import { useRef, useCallback, useState, useEffect } from 'react'
+import { trackImageUpload } from '@/lib/analytics'
 import { Slider } from '@/components/ui/slider'
 import { Switch } from '@/components/ui/switch'
 import { cn } from '@/lib/utils'
@@ -600,8 +601,8 @@ export function ControlPanel({ settings, displayCount, onChange, onReset, onRand
           <Section title="Import">
             <div className="flex flex-col gap-2">
               <div className="grid grid-cols-2 gap-2">
-                <DropZone label="Front Image" image={settings.frontImage} onLoad={(url) => onChange({ frontImage: url })} />
-                <DropZone label="Back Image"  image={settings.backImage}  onLoad={(url) => onChange({ backImage:  url })} />
+                <DropZone label="Front Image" image={settings.frontImage} onLoad={(url) => { trackImageUpload('front'); onChange({ frontImage: url }) }} />
+                <DropZone label="Back Image"  image={settings.backImage}  onLoad={(url) => { trackImageUpload('back');  onChange({ backImage:  url }) }} />
               </div>
               <p className="text-[12px] font-medium text-white text-center">Recommended size : 484x306px</p>
             </div>

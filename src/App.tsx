@@ -16,7 +16,7 @@ import { contrastColor } from './lib/utils'
 import { randomizePoses } from './lib/randomize'
 import { supabase } from './lib/supabase'
 import { useCredits, EXPORT_COST } from './hooks/useCredits'
-import { trackExport, trackOpenBuyCredits, trackPurchase, trackSignOut, identifyUser } from './lib/analytics'
+import { trackExport, trackOpenBuyCredits, trackPurchase, trackSignOut, identifyUser, trackRandomize, trackReset, trackDisplayCountChange, trackOrientationChange, trackImageUpload, trackTabSwitch, trackCameraModeChange, trackAddWorkspace } from './lib/analytics'
 import { DEFAULT_FRONT_URL } from './constants'
 
 /* ── Default card settings ───────────────────────────────────────── */
@@ -437,6 +437,7 @@ export default function App() {
       const reader = new FileReader()
       reader.onload = (ev) => {
         const dataUrl = ev.target?.result as string
+        trackImageUpload('paste')
         patchWs((ws) => ({
           ...ws,
           pages: ws.pages.map((p) => {
@@ -457,6 +458,7 @@ export default function App() {
   /* ── Orientation change intercept ── */
   const handleChange = useCallback(
     (patch: Partial<CardSettings>) => {
+      if ('cameraMode' in patch && patch.cameraMode) trackCameraModeChange(patch.cameraMode)
       if (
         'orientation' in patch &&
         patch.orientation !== settings.orientation &&
@@ -472,6 +474,7 @@ export default function App() {
 
   const confirmOrientationChange = useCallback(() => {
     if (!pendingOrientation) return
+    trackOrientationChange(pendingOrientation)
     update({ orientation: pendingOrientation, frontImage: null, backImage: null })
     setPendingOrientation(null)
   }, [pendingOrientation, update])
@@ -500,6 +503,7 @@ export default function App() {
 
   /* ── Reset active card ── */
   const handleReset = useCallback(() => {
+    trackReset()
     patchWs((ws) => ({
       ...ws,
       pages: ws.pages.map((p) =>
@@ -518,6 +522,7 @@ export default function App() {
 
   /* ── Randomize poses ── */
   const handleRandomize = useCallback(() => {
+    trackRandomize()
     const count = activeWsRef.current.displayCount as 1 | 2 | 3
     const patches = randomizePoses(count)
     patchWs((ws) => {
@@ -539,6 +544,7 @@ export default function App() {
 
   /* ── Display count change (within active workspace) ── */
   const handleDisplayCountChange = useCallback((count: 1 | 2 | 3) => {
+    trackDisplayCountChange(count)
     patchWs((ws) => {
       const pages = [...ws.pages]
       while (pages.length < count) {
@@ -557,6 +563,7 @@ export default function App() {
 
   /* ── Workspace management ── */
   const handleAddWorkspace = useCallback(() => {
+    trackAddWorkspace()
     const page: CardPage = { id: makeId(), name: 'Card 1', settings: { ...DEFAULT_SETTINGS } }
     const ws: Workspace  = {
       id:           makeId(),
@@ -1052,7 +1059,7 @@ export default function App() {
         onExport={handleExport}
         onCapturePreview={capturePreview}
         tab={controlPanelTab}
-        onTabChange={setControlPanelTab}
+        onTabChange={(tab) => { trackTabSwitch(tab); setControlPanelTab(tab) }}
       />
 
       {/* ── Reload confirm dialog ── */}
