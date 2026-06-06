@@ -2,6 +2,26 @@ export type Finish = 'metallic' | 'plastic' | 'matte'
 export type Orientation = 'horizontal' | 'vertical'
 export type CameraMode = 'perspective' | 'isometric'
 
+export type BlendMode =
+  | 'source-over'
+  | 'multiply'
+  | 'screen'
+  | 'overlay'
+  | 'darken'
+  | 'lighten'
+  | 'color-dodge'
+  | 'color-burn'
+  | 'difference'
+  | 'exclusion'
+
+export interface ImageLayer {
+  id:        string
+  name:      string
+  image:     string      // data URL
+  blendMode: BlendMode   // canvas globalCompositeOperation
+  opacity:   number      // 0–100
+}
+
 export interface CardSettings {
   rotX: number           // degrés: -90 → 90
   rotY: number           // degrés: -180 → 180
@@ -13,8 +33,9 @@ export interface CardSettings {
   finish: Finish
   orientation: Orientation
   edgeColor: string      // couleur de la tranche (hex)
-  frontImage: string | null  // data URL PNG
-  backImage: string | null   // data URL PNG
+  cardColor: string      // couleur de fond de la carte (face avant + arrière)
+  frontLayers: ImageLayer[]  // couches face avant (index 0 = bas)
+  backLayers:  ImageLayer[]  // couches face arrière
   autoRotate: boolean
   lightIntensity: number     // 0 → 2
   bgColor: string | 'transparent'  // hex ou 'transparent'

@@ -77,7 +77,7 @@ export function Header({
   const hasAvatar    = userEmail != null
 
   return (
-    <header className="h-[72px] flex items-center justify-between pl-6 pr-4 bg-[#111] border-b border-[#242424] flex-shrink-0 z-20">
+    <header className="fixed top-0 left-0 right-0 z-30 h-[72px] flex items-center justify-between pl-6 pr-4 bg-[#111] border-b border-[#242424]">
 
       {/* ── Logo ── */}
       <button

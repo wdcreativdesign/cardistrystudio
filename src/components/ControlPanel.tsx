@@ -1,11 +1,10 @@
 import { useRef, useCallback, useState, useEffect } from 'react'
-import { trackImageUpload } from '@/lib/analytics'
 import { Slider } from '@/components/ui/slider'
+import { SliderRow } from '@/components/SliderRow'
 import { Switch } from '@/components/ui/switch'
 import { cn } from '@/lib/utils'
 import { Icon } from '@/components/ui/icon'
 import { type CardSettings, type CameraMode, type Finish } from '@/types'
-import { DEFAULT_FRONT_URL } from '@/constants'
 
 /* ─── Helpers ──────────────────────────────────────────────────── */
 function fmt(v: number, unit = '°') {
@@ -37,7 +36,7 @@ function Section({ title, children, defaultOpen = true }: {
         className="w-full h-[49px] flex items-center justify-between px-4 group"
       >
         <span className="text-[14px] font-medium text-white select-none">{title}</span>
-        <Icon name="expand_more" size={20} className={cn('text-white/25 transition-transform duration-200', open ? 'rotate-0' : '-rotate-90')} />
+        <Icon name="expand_more" size={20} className={cn('text-white transition-transform duration-200', open ? 'rotate-0' : '-rotate-90')} />
       </button>
       <div className={cn(
         'grid transition-all duration-200 ease-in-out',
@@ -48,69 +47,6 @@ function Section({ title, children, defaultOpen = true }: {
         </div>
       </div>
       <div className="h-px bg-white/[0.06]" />
-    </div>
-  )
-}
-
-/* ─── SliderRow ────────────────────────────────────────────────── */
-function SliderRow({ label, value, min, max, step = 1, unit = '°', format: fmtFn, onChange }: {
-  label: string
-  value: number
-  min: number
-  max: number
-  step?: number
-  unit?: string
-  format?: (v: number) => string
-  onChange: (v: number) => void
-}) {
-  const [editing,  setEditing]  = useState(false)
-  const [inputVal, setInputVal] = useState('')
-  const inputRef = useRef<HTMLInputElement>(null)
-
-  const display = fmtFn ? fmtFn(value) : fmt(value, unit)
-
-  function startEdit() { setInputVal(String(value)); setEditing(true) }
-  function commitEdit(raw = inputVal) {
-    const parsed = parseFloat(raw)
-    if (!isNaN(parsed)) onChange(Math.min(max, Math.max(min, parsed)))
-    setEditing(false)
-  }
-
-  useEffect(() => {
-    if (editing) { inputRef.current?.focus(); inputRef.current?.select() }
-  }, [editing])
-
-  return (
-    <div className="space-y-2">
-      <div className="flex items-center justify-between">
-        <span className="text-[12px] font-medium text-white">{label}</span>
-        {editing ? (
-          <input
-            ref={inputRef}
-            type="text"
-            value={inputVal}
-            onChange={(e) => setInputVal(e.target.value)}
-            onBlur={() => commitEdit()}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter')  { e.preventDefault(); commitEdit() }
-              if (e.key === 'Escape') setEditing(false)
-            }}
-            className="text-[12px] font-medium text-white text-right w-16 h-6 rounded-[4px] px-1 bg-[#242424] border border-[#9ae600] focus:outline-none"
-          />
-        ) : (
-          <span
-            role="button"
-            tabIndex={0}
-            onClick={startEdit}
-            onKeyDown={(e) => e.key === 'Enter' && startEdit()}
-            title="Click to edit"
-            className="text-[12px] font-medium text-white bg-[#242424] rounded-[4px] px-1 h-6 w-16 text-right cursor-text select-none hover:brightness-110 transition-colors inline-flex items-center justify-end"
-          >
-            {display}
-          </span>
-        )}
-      </div>
-      <Slider min={min} max={max} step={step} value={[value]} onValueChange={([v]) => onChange(v)} />
     </div>
   )
 }
@@ -154,62 +90,6 @@ function EdgeSection({ value, onChange }: { value: string; onChange: (v: string)
         onKeyDown={(e) => e.key === 'Enter' && handleHexCommit(hex)}
         className="flex-1 text-right text-[12px] font-medium text-white bg-[#242424] h-6 rounded-[4px] px-1 uppercase focus:outline-none focus:border focus:border-[#9ae600] transition-all"
         maxLength={7}
-      />
-    </div>
-  )
-}
-
-/* ─── Drop zone ─────────────────────────────────────────────────── */
-function DropZone({ label, image, onLoad }: {
-  label: string
-  image: string | null
-  onLoad: (dataUrl: string) => void
-}) {
-  const inputRef = useRef<HTMLInputElement>(null)
-
-  const handleFile = useCallback((file: File) => {
-    if (!file.type.startsWith('image/') && file.type !== 'image/svg+xml') return
-    const reader = new FileReader()
-    reader.onload = (e) => onLoad(e.target?.result as string)
-    reader.readAsDataURL(file)
-  }, [onLoad])
-
-  const handleDrop = useCallback((e: React.DragEvent) => {
-    e.preventDefault()
-    const file = e.dataTransfer.files[0]
-    if (file) handleFile(file)
-  }, [handleFile])
-
-  return (
-    <div
-      className="relative flex flex-col items-center justify-center gap-1 rounded-[8px] border border-dashed border-[#242424] bg-white/[0.04] hover:bg-white/[0.06] hover:border-white/20 transition-all cursor-pointer overflow-hidden py-4 px-2"
-      onClick={() => inputRef.current?.click()}
-      onDrop={handleDrop}
-      onDragOver={(e) => e.preventDefault()}
-    >
-      {image && image !== DEFAULT_FRONT_URL ? (
-        <>
-          <img src={image} alt={label} className="absolute inset-0 w-full h-full object-cover" />
-          <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/60 opacity-0 hover:opacity-100 transition-opacity rounded-xl gap-1">
-            <Icon name="refresh" size={18} className="text-white" />
-            <span className="text-white text-[10px] font-medium">Change</span>
-          </div>
-        </>
-      ) : (
-        <>
-          <Icon name="image" size={20} className="text-white" />
-          <div className="text-center">
-            <p className="text-[12px] text-white font-medium leading-tight">{label}</p>
-            <p className="text-[12px] text-[#999] font-medium leading-tight">PNG, JPG, SVG</p>
-          </div>
-        </>
-      )}
-      <input
-        ref={inputRef}
-        type="file"
-        accept="image/*,.svg"
-        className="sr-only"
-        onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFile(f) }}
       />
     </div>
   )
@@ -612,7 +492,7 @@ interface ControlPanelProps {
 export function ControlPanel({ settings, displayCount, onChange, onReset, onRandomize, onExport, onCapturePreview, tab, onTabChange }: ControlPanelProps) {
 
   return (
-    <aside className="flex flex-col w-[280px] min-w-[280px] h-screen bg-[#111] border-l border-[#242424]">
+    <aside className="flex flex-col w-[280px] min-w-[280px] bg-[#111] border-l border-[#242424]" style={{ marginTop: 72, height: 'calc(100vh - 72px)' }}>
 
       {/* ── Navigation ── */}
       <div className="h-[72px] flex items-center px-4 border-b border-white/[0.06]">
@@ -626,7 +506,7 @@ export function ControlPanel({ settings, displayCount, onChange, onReset, onRand
                 tab === t ? 'bg-[#141414] text-white font-medium shadow-sm' : 'text-[#999] hover:text-white/60 font-medium',
               )}
             >
-              {t.charAt(0).toUpperCase() + t.slice(1)}
+              {t === 'create' ? 'Moove' : 'Export'}
             </button>
           ))}
         </div>
@@ -635,22 +515,6 @@ export function ControlPanel({ settings, displayCount, onChange, onReset, onRand
       {/* ── Create tab ── */}
       {tab === 'create' && (
         <div className="flex-1 overflow-y-auto" style={{ scrollbarWidth: 'none' }}>
-
-          {/* Import */}
-          <Section title="Import">
-            <div className="flex flex-col gap-2">
-              <div className="grid grid-cols-2 gap-2">
-                <DropZone label="Front Image" image={settings.frontImage} onLoad={(url) => { trackImageUpload('front'); onChange({ frontImage: url }) }} />
-                <DropZone label="Back Image"  image={settings.backImage}  onLoad={(url) => { trackImageUpload('back');  onChange({ backImage:  url }) }} />
-              </div>
-              <p className="text-[12px] font-medium text-white text-center">Recommended size : 484x306px</p>
-            </div>
-          </Section>
-
-          {/* Edge */}
-          <Section title="Edge">
-            <EdgeSection value={settings.edgeColor} onChange={(v) => onChange({ edgeColor: v })} />
-          </Section>
 
           {/* Rotation */}
           <Section title="Rotation">
@@ -718,11 +582,6 @@ export function ControlPanel({ settings, displayCount, onChange, onReset, onRand
                 Orthographic — parallel lines stay parallel.
               </p>
             )}
-          </Section>
-
-          {/* Lights */}
-          <Section title="Lights">
-            <SliderRow label="Intensity" value={settings.lightIntensity} min={0} max={2} step={0.05} unit="×" onChange={(v) => onChange({ lightIntensity: v })} />
           </Section>
 
           <div className="h-8" />

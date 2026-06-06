@@ -1,7 +1,7 @@
 import { useRef, useState, useEffect, useMemo } from 'react'
 import { useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
-import { type CardSettings, type Orientation, FINISH_CONFIGS } from '@/types'
+import { type CardSettings, type ImageLayer, type Orientation, FINISH_CONFIGS } from '@/types'
 
 /* ─── Dimensions exactes ISO 7810 ID-1 ──────────────────────────────
    Largeur  : 85,7 mm   → CARD_W = 3.2 unités Three.js (référence)
@@ -98,6 +98,69 @@ function loadImageAsTexture(
     onDone(tex)
   }
   img.src = src
+}
+
+/* ─── Composite N image layers → single THREE.Texture ──────────── */
+function useCompositeTexture(layers: ImageLayer[], cardColor: string): THREE.Texture | null {
+  const [tex, setTex] = useState<THREE.Texture | null>(null)
+
+  // Clé stable : cardColor + ids + blendModes + début de chaque data URL
+  const key = cardColor + '|' + layers.map((l) => l.id + ':' + l.blendMode + ':' + (l.opacity ?? 100) + ':' + l.image.slice(0, 32)).join('|')
+
+  useEffect(() => {
+    if (layers.length === 0) {
+      setTex((prev) => { prev?.dispose(); return null })
+      return
+    }
+
+    const signal = { cancelled: false }
+
+    Promise.all(
+      layers.map(
+        (l) =>
+          new Promise<HTMLImageElement>((resolve, reject) => {
+            const img = new Image()
+            img.onload  = () => resolve(img)
+            img.onerror = reject
+            img.src     = l.image
+          }),
+      ),
+    )
+      .then((imgs) => {
+        if (signal.cancelled) return
+        const maxW = Math.max(...imgs.map((i) => (i.naturalWidth  > 0 ? Math.min(i.naturalWidth,  4096) : 2048)))
+        const maxH = Math.max(...imgs.map((i) => (i.naturalHeight > 0 ? Math.min(i.naturalHeight, 4096) : 2048)))
+        const canvas = document.createElement('canvas')
+        canvas.width  = maxW
+        canvas.height = maxH
+        const ctx = canvas.getContext('2d')!
+        // Remplir avec cardColor comme fond
+        ctx.fillStyle = cardColor
+        ctx.fillRect(0, 0, maxW, maxH)
+        // Composer du bas vers le haut : index 0 = top de liste = dessiné en dernier (sur le dessus)
+        const revImgs   = [...imgs].reverse()
+        const revLayers = [...layers].reverse()
+        revImgs.forEach((img, i) => {
+          ctx.globalAlpha             = (revLayers[i].opacity ?? 100) / 100
+          ctx.globalCompositeOperation = revLayers[i].blendMode ?? 'source-over'
+          ctx.drawImage(img, 0, 0, maxW, maxH)
+        })
+        ctx.globalAlpha = 1 // reset
+        ctx.globalCompositeOperation = 'source-over' // reset
+        const newTex = new THREE.CanvasTexture(canvas)
+        newTex.colorSpace      = THREE.SRGBColorSpace
+        newTex.minFilter       = THREE.LinearMipmapLinearFilter
+        newTex.generateMipmaps = true
+        newTex.needsUpdate     = true
+        setTex((prev) => { prev?.dispose(); return newTex })
+      })
+      .catch(() => { /* image invalide — on ignore */ })
+
+    return () => { signal.cancelled = true }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [key])
+
+  return tex
 }
 
 /* ─── Selection dots (ondulating perimeter) ─────────────────────── */
@@ -256,27 +319,9 @@ export function Card3D({ settings, tilt, isActive = false }: Card3DProps) {
     return () => { signal.cancelled = true }
   }, [])
 
-  /* ── Textures utilisateur ── */
-  const [frontTex, setFrontTex] = useState<THREE.Texture | null>(null)
-  const [backTex,  setBackTex]  = useState<THREE.Texture | null>(null)
-
-  useEffect(() => {
-    if (!settings.frontImage) { setFrontTex(prev => { prev?.dispose(); return null }); return }
-    const signal = { cancelled: false }
-    loadImageAsTexture(settings.frontImage, (tex) => {
-      setFrontTex(prev => { prev?.dispose(); return tex })
-    }, signal)
-    return () => { signal.cancelled = true }
-  }, [settings.frontImage])
-
-  useEffect(() => {
-    if (!settings.backImage) { setBackTex(prev => { prev?.dispose(); return null }); return }
-    const signal = { cancelled: false }
-    loadImageAsTexture(settings.backImage, (tex) => {
-      setBackTex(prev => { prev?.dispose(); return tex })
-    }, signal)
-    return () => { signal.cancelled = true }
-  }, [settings.backImage])
+  /* ── Textures utilisateur (composite multi-layers) ── */
+  const frontTex = useCompositeTexture(settings.frontLayers, settings.cardColor)
+  const backTex  = useCompositeTexture(settings.backLayers,  settings.cardColor)
 
   /* ── Animation frame ─────────────────────────────────────────── */
   useFrame((_, delta) => {
@@ -383,7 +428,7 @@ export function Card3D({ settings, tilt, isActive = false }: Card3DProps) {
       <mesh geometry={faceGeo} position={[0, 0, Z_FACE]}>
         <meshPhysicalMaterial
           key={frontTex?.uuid ?? 'front-blank'}
-          color={frontTex ? '#ffffff' : '#080808'}
+          color={frontTex ? '#ffffff' : settings.cardColor}
           map={frontTex ?? undefined}
           {...faceMat}
         />
@@ -393,7 +438,7 @@ export function Card3D({ settings, tilt, isActive = false }: Card3DProps) {
       <mesh geometry={faceGeo} position={[0, 0, -Z_FACE]} rotation={[0, Math.PI, 0]}>
         <meshPhysicalMaterial
           key={backTex?.uuid ?? 'back-blank'}
-          color={backTex ? '#ffffff' : '#080808'}
+          color={backTex ? '#ffffff' : settings.cardColor}
           map={backTex ?? undefined}
           {...faceMat}
         />

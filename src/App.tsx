@@ -12,7 +12,7 @@ import { RoadmapModal } from './components/RoadmapModal'
 import { FeedbackPromptModal } from './components/FeedbackPromptModal'
 import { SmallScreenBlock } from './components/SmallScreenBlock'
 import { LoginModal } from './components/LoginModal'
-import { type CardSettings, type CardPage, type Workspace, type Orientation, type SavedPose } from './types'
+import { type CardSettings, type CardPage, type Workspace, type Orientation, type SavedPose, type ImageLayer } from './types'
 import { contrastColor } from './lib/utils'
 import { randomizePoses } from './lib/randomize'
 import { supabase } from './lib/supabase'
@@ -32,8 +32,9 @@ const DEFAULT_SETTINGS: CardSettings = {
   finish: 'metallic',
   orientation: 'horizontal',
   edgeColor: '#9AE600',
-  frontImage: DEFAULT_FRONT_URL,
-  backImage: null,
+  cardColor: '#111111',
+  frontLayers: [],
+  backLayers:  [],
   autoRotate: false,
   lightIntensity: 1.15,
   bgColor: '#1d1d1d',
@@ -80,14 +81,31 @@ const LS_ACTIVE_WS  = 'cs-active-ws'
 function migrateWorkspaces(workspaces: Workspace[]): Workspace[] {
   return workspaces.map((ws) => ({
     ...ws,
-    pages: ws.pages.map((p) => ({
-      ...p,
-      settings: {
-        ...p.settings,
-        bgColor:   p.settings.bgColor   === '#f0f0f5' ? '#1d1d1d' : p.settings.bgColor,
-        edgeColor: p.settings.edgeColor === '#009FFF' ? '#9AE600' : p.settings.edgeColor,
-      },
-    })),
+    pages: ws.pages.map((p) => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const s = p.settings as any
+      const frontImage: string | null = s.frontImage ?? null
+      const backImage:  string | null = s.backImage  ?? null
+      const frontLayers: ImageLayer[] = s.frontLayers ?? (
+        frontImage && frontImage !== DEFAULT_FRONT_URL
+          ? [{ id: makeId(), name: 'Layer 1', image: frontImage, blendMode: 'source-over' as const, opacity: 100 }]
+          : []
+      )
+      const backLayers: ImageLayer[] = s.backLayers ?? (
+        backImage ? [{ id: makeId(), name: 'Layer 1', image: backImage, blendMode: 'source-over' as const, opacity: 100 }] : []
+      )
+      return {
+        ...p,
+        settings: {
+          ...p.settings,
+          bgColor:     s.bgColor   === '#f0f0f5' ? '#1d1d1d' : s.bgColor,
+          edgeColor:   s.edgeColor === '#009FFF' ? '#9AE600' : s.edgeColor,
+          cardColor:   s.cardColor ?? '#111111',
+          frontLayers,
+          backLayers,
+        },
+      }
+    }),
   }))
 }
 
@@ -114,7 +132,7 @@ function saveWorkspaces(workspaces: Workspace[], activeWorkspaceId: string) {
         ...ws,
         pages: ws.pages.map((p) => ({
           ...p,
-          settings: { ...p.settings, frontImage: null, backImage: null },
+          settings: { ...p.settings, frontLayers: [], backLayers: [] },
         })),
       }))
       localStorage.setItem(LS_WORKSPACES, JSON.stringify(slim))
@@ -459,10 +477,13 @@ export default function App() {
           ...ws,
           pages: ws.pages.map((p) => {
             if (p.id !== ws.activePageId) return p
-            const { frontImage, backImage } = p.settings
-            if (!frontImage) return { ...p, settings: { ...p.settings, frontImage: dataUrl } }
-            if (!backImage)  return { ...p, settings: { ...p.settings, backImage: dataUrl } }
-            return                   { ...p, settings: { ...p.settings, frontImage: dataUrl } }
+            // Paste ajoute sur le front en premier, puis back
+            const { frontLayers, backLayers } = p.settings
+            const newLayer: ImageLayer = { id: makeId(), name: `Layer ${frontLayers.length + 1}`, image: dataUrl, blendMode: 'source-over', opacity: 100 }
+            if (frontLayers.length === 0 || backLayers.length > 0) {
+              return { ...p, settings: { ...p.settings, frontLayers: [...frontLayers, newLayer] } }
+            }
+            return { ...p, settings: { ...p.settings, frontLayers: [...frontLayers, newLayer] } }
           }),
         }))
       }
@@ -479,20 +500,20 @@ export default function App() {
       if (
         'orientation' in patch &&
         patch.orientation !== settings.orientation &&
-        (settings.frontImage || settings.backImage)
+        (settings.frontLayers.length > 0 || settings.backLayers.length > 0)
       ) {
         setPendingOrientation(patch.orientation!)
       } else {
         update(patch)
       }
     },
-    [settings.orientation, settings.frontImage, settings.backImage, update],
+    [settings.orientation, settings.frontLayers, settings.backLayers, update],
   )
 
   const confirmOrientationChange = useCallback(() => {
     if (!pendingOrientation) return
     trackOrientationChange(pendingOrientation)
-    update({ orientation: pendingOrientation, frontImage: null, backImage: null })
+    update({ orientation: pendingOrientation, frontLayers: [], backLayers: [] })
     setPendingOrientation(null)
   }, [pendingOrientation, update])
 
@@ -504,7 +525,7 @@ export default function App() {
     const ws = workspaces[0]
     if (ws.pages.length !== 1 || ws.displayCount !== 1) return false
     const s = ws.pages[0].settings
-    if ((s.frontImage && s.frontImage !== DEFAULT_FRONT_URL) || s.backImage) return false
+    if (s.frontLayers.length > 0 || s.backLayers.length > 0) return false
     const keys = [
       'rotX','rotY','rotZ','zoom','posX','posY','posZ',
       'finish','orientation','edgeColor','autoRotate','lightIntensity','bgColor',
@@ -527,8 +548,8 @@ export default function App() {
         p.id === ws.activePageId
           ? { ...p, settings: {
               ...DEFAULT_SETTINGS,
-              frontImage:  p.settings.frontImage,
-              backImage:   p.settings.backImage,
+              frontLayers: p.settings.frontLayers,
+              backLayers:  p.settings.backLayers,
               finish:      p.settings.finish,
               orientation: p.settings.orientation,
             }}
@@ -604,6 +625,10 @@ export default function App() {
 
   const handleSelectWorkspace = useCallback((id: string) => {
     setActiveWorkspaceId(id)
+  }, [])
+
+  const handleRenameWorkspace = useCallback((id: string, name: string) => {
+    setWorkspaces((prev) => prev.map((w) => w.id === id ? { ...w, name } : w))
   }, [])
 
   /* ── Capture preview (used by ExportTab thumbnail) ── */
@@ -969,35 +994,32 @@ export default function App() {
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-[#141414]">
 
-      {/* ── Left panel — workspaces ── */}
+      {/* ── Header bar — fixed full width, above everything ── */}
+      <Header
+        onRestart={handleRestart}
+        onReset={handleReset}
+        onRoadmap={() => setShowRoadmap(true)}
+        onLogoClick={handleLogoClick}
+        credits={displayCredits}
+        onBuyCredits={() => setShowBuyCredits(true)}
+        onSignIn={() => setShowLoginModal(true)}
+        userEmail={currentUser?.email ?? null}
+      />
+
+      {/* ── Left panel — pages + layers ── */}
       <LeftPanel
         workspaces={workspaces}
         activeWorkspaceId={activeWorkspaceId}
+        activeSettings={settings}
         onSelect={handleSelectWorkspace}
         onAdd={handleAddWorkspace}
         onDelete={handleDeleteWorkspace}
-        savedPoses={savedPoses}
-        currentSettings={settings}
-        onSavePose={handleSavePose}
-        onApplyPose={handleApplyPose}
-        onDeletePose={handleDeletePose}
-        onRenamePose={handleRenamePose}
+        onRename={handleRenameWorkspace}
+        onChange={handleChange}
       />
 
-      {/* ── Canvas column (header + viewport) ── */}
-      <div className="flex-1 flex flex-col min-w-0">
-
-        {/* ── Header bar ── */}
-        <Header
-          onRestart={handleRestart}
-          onReset={handleReset}
-          onRoadmap={() => setShowRoadmap(true)}
-          onLogoClick={handleLogoClick}
-          credits={displayCredits}
-          onBuyCredits={() => setShowBuyCredits(true)}
-          onSignIn={() => setShowLoginModal(true)}
-          userEmail={currentUser?.email ?? null}
-        />
+      {/* ── Canvas column ── */}
+      <div className="flex-1 flex flex-col min-w-0" style={{ marginTop: 72 }}>
 
         {/* ── Canvas viewport ── */}
         <div
@@ -1050,7 +1072,7 @@ export default function App() {
           )}
         </div>
 
-        {/* ── Bottom bar — barre fixe sous le canvas ── */}
+        {/* ── Bottom bar — fixed full width, above everything ── */}
         <BottomBar
           settings={settings}
           onChange={handleChange}

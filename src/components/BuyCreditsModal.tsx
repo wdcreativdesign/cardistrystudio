@@ -24,6 +24,7 @@ const PACKS = [
     icon:      'neurology',
     tag:       'Popular',
     unlimited: false,
+    popular:   true,
   },
   {
     id:        'studio',
@@ -35,16 +36,27 @@ const PACKS = [
     unlimited: false,
   },
   {
-    id:        'unlimited',
-    name:      'Unlimited',
-    tag:       'Best value',
-    price:     '24,99 €',
-    credits:   10000,
-    priceId:   'price_1TcZPpRoCyUZdpCthzlpOu7H',
-    icon:      'all_inclusive',
-    unlimited: true,
+    id:            'unlimited',
+    name:          'Unlimited',
+    originalPrice: '29,99 €',
+    price:         '24,99 €',
+    credits:       10000,
+    priceId:       'price_1TcZPpRoCyUZdpCthzlpOu7H',
+    icon:          'all_inclusive',
+    unlimited:     true,
   },
 ] as const
+
+/* Payment logos — Visa + MC have a dark bg box, Apple Pay + Klarna are standalone images */
+// Structure exacte du Figma :
+// Visa + Mastercard = logo seul positionné sur fond #242424 (bg container + logo absolu)
+// Apple Pay + Klarna = image 40×24 complète avec fond intégré
+const PAY_LOGOS = [
+  { src: '/pay-visa-logo.svg',      withBg: true  },
+  { src: '/pay-mastercard-logo.svg', withBg: true  },
+  { src: '/pay-applepay-card.svg',  withBg: false },
+  { src: '/pay-klarna-card.svg',    withBg: false },
+]
 
 interface BuyCreditsModalProps {
   currentBalance: number
@@ -79,75 +91,99 @@ export function BuyCreditsModal({ currentBalance, onClose }: BuyCreditsModalProp
 
       <div className="relative bg-[#111] border border-[#242424] rounded-[24px] w-[380px] mx-4 p-6 flex flex-col gap-6 drop-shadow-[0px_8px_12px_rgba(0,0,0,0.32)] animate-in fade-in zoom-in-95 duration-150">
 
-        {/* Header */}
-        <div className="flex items-start justify-between">
+        {/* ── Header ── */}
+        <div className="flex items-start justify-between w-full">
           <div className="flex flex-col gap-2">
-            <p className="text-[16px] font-medium text-white">Buy tokens</p>
-            <p className="text-[14px] font-medium text-[#999]">
-              Balance · <span className="text-white">{currentBalance >= 1000 ? 'Unlimited' : currentBalance}</span> tokens
+            <p className="text-[16px] font-medium text-white leading-normal">Buy tokens</p>
+            <p className="text-[14px] font-medium text-[#999] leading-normal">
+              Balance · <span className="text-white">{currentBalance >= 10000 ? 'Unlimited' : currentBalance}</span> tokens
               {currentBalance < EXPORT_COST && (
                 <span className="text-red-400 ml-1">· {EXPORT_COST} needed</span>
               )}
             </p>
           </div>
-          <button type="button" onClick={onClose} className="text-white hover:text-white/60 transition-colors">
+          <button type="button" onClick={onClose} className="text-white hover:text-white/60 transition-colors flex-shrink-0">
             <Icon name="close" size={20} />
           </button>
         </div>
 
-        {/* Packs */}
+        {/* ── Packs ── */}
         <div className="flex flex-col gap-4">
-          <div className="flex flex-col gap-4">
-            {PACKS.map((pack) => (
-              <button
-                key={pack.id}
-                type="button"
-                onClick={() => setSelected(pack.id)}
-                className={cn(
-                  'w-full flex items-center gap-6 px-6 rounded-[16px] text-left transition-all active:scale-[0.99] h-[72px]',
-                  selected === pack.id ? 'border-2 border-[#9ae600]' : 'border border-[#242424] hover:border-white/20',
+
+          {PACKS.map((pack) => (
+            <button
+              key={pack.id}
+              type="button"
+              onClick={() => setSelected(pack.id)}
+              className={cn(
+                'w-full flex items-center gap-6 px-6 py-4 rounded-[16px] text-left transition-all active:scale-[0.99]',
+                selected === pack.id
+                  ? 'border-2 border-[#9ae600]'
+                  : 'border border-[#242424] hover:border-white/20',
+              )}
+            >
+              <Icon name={pack.icon} size={20} className="text-[#9ae600] flex-shrink-0" />
+
+              <div className="flex-1 flex flex-col gap-1 min-w-0">
+                <p className="text-[14px] font-medium text-white leading-normal">{pack.name}</p>
+                {!pack.unlimited && (
+                  <p className="text-[12px] font-medium text-[#999] leading-normal">{pack.credits} tokens</p>
                 )}
-              >
-                <Icon
-                  name={pack.icon}
-                  size={20}
-                  className="text-[#9ae600] flex-shrink-0"
-                />
-                <div className="flex-1 flex flex-col gap-1 min-w-0">
-                  <p className="text-[14px] font-medium text-white">{pack.name}</p>
-                  {!pack.unlimited && (
-                    <p className="text-[12px] font-medium text-[#999]">{pack.credits} tokens</p>
-                  )}
-                </div>
+              </div>
+
+              <div className="flex items-center gap-2 flex-shrink-0">
                 {'tag' in pack && pack.tag && (
-                  <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-[#9ae600]/15 text-[#9ae600] flex-shrink-0 self-center">
+                  <span className="text-[12px] font-medium px-3 py-1 rounded-full bg-[#233012] text-[#9ae600]">
                     {pack.tag}
                   </span>
                 )}
-                <p className="text-[14px] font-medium text-white flex-shrink-0">{pack.price}</p>
-              </button>
-            ))}
-          </div>
+                {'originalPrice' in pack && pack.originalPrice ? (
+                  <div className="flex items-center gap-2">
+                    <p className="text-[14px] font-medium text-[#9ae600]">{pack.price}</p>
+                    <p className="text-[14px] font-medium text-[#999] line-through">{pack.originalPrice}</p>
+                  </div>
+                ) : (
+                  <p className="text-[14px] font-medium text-white">{pack.price}</p>
+                )}
+              </div>
+            </button>
+          ))}
 
-          {/* CTA */}
+          {/* ── CTA ── */}
           <button
             type="button"
             onClick={handleBuy}
             disabled={loading}
             className={cn(
               'w-full h-[41px] rounded-full text-[16px] font-medium transition-all active:scale-[0.98] flex items-center justify-center gap-2',
-              loading ? 'bg-[#9ae600]/50 text-[#111]/50 cursor-not-allowed' : 'bg-[#9ae600] hover:bg-[#aaff00] text-[#111]',
+              loading
+                ? 'bg-[#9ae600]/50 text-[#111]/50 cursor-not-allowed'
+                : 'bg-[#9ae600] hover:bg-[#aaff00] text-[#111]',
             )}
           >
             {loading && <Icon name="progress_activity" size={18} className="animate-spin" />}
             {loading ? 'Redirecting…' : `Buy – ${selectedPack.price}`}
           </button>
 
-          <p className="text-[12px] font-medium text-[#999] text-center">
-            Secured by Stripe. Cost {EXPORT_COST} tokens by exports
-          </p>
-        </div>
+          {/* ── Stripe badge ── */}
+          <p className="text-[12px] font-medium text-[#999] text-center">🔒 Secured by Stripe</p>
 
+          {/* ── Payment logos ── */}
+          <div className="flex items-center justify-center gap-2">
+            {PAY_LOGOS.map(({ src, withBg }) =>
+              withBg ? (
+                /* Visa / Mastercard : logo seul sur fond #242424, overflow:hidden pour clipper le SVG */
+                <div key={src} className="w-10 h-6 flex-shrink-0 bg-[#242424] border border-[#242424] rounded-[4px] overflow-hidden flex items-center justify-center" style={{ padding: '4px 5px' }}>
+                  <img src={src} alt="" className="w-full h-full object-contain" />
+                </div>
+              ) : (
+                /* Apple Pay / Klarna : image complète 40×24 avec fond intégré */
+                <img key={src} src={src} alt="" width={40} height={24} className="flex-shrink-0 rounded-[4px]" />
+              )
+            )}
+          </div>
+
+        </div>
       </div>
     </div>
   )
