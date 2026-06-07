@@ -600,13 +600,21 @@ function LayersSection({ settings, onChange, addRef }: {
   }
 
   return (
-    <div className="flex flex-col items-start w-full gap-[12px]">
+    <div className="flex flex-col items-start w-full gap-[16px]">
       <SegControl
         options={[{ key: 'front', label: 'Front' }, { key: 'back', label: 'Back' }]}
         value={face}
         onChange={setFace}
       />
 
+      {/* État vide */}
+      {layers.length === 0 && (
+        <p className="text-[12px] font-medium text-white text-center w-full">
+          Drop an image to get started
+        </p>
+      )}
+
+      {/* Rows */}
       {layers.length > 0 && (
         <div className="flex flex-col w-full" onDragLeave={() => setDropTarget(null)}>
           {layers.map((layer, i) => (
@@ -629,6 +637,19 @@ function LayersSection({ settings, onChange, addRef }: {
           ))}
         </div>
       )}
+
+      {/* CTA + hint — toujours visible */}
+      <div className="flex flex-col gap-[8px] items-start w-full">
+        <button
+          onClick={() => (addRef as React.RefObject<HTMLInputElement>)?.current?.click()}
+          className="flex items-center justify-center h-[40px] w-full rounded-full bg-[#242424] hover:brightness-110 transition-all"
+        >
+          <span className="text-[16px] font-medium text-white">Add layer</span>
+        </button>
+        <p className="text-[12px] font-medium text-white text-center w-full">
+          Recommended size : 484x306px
+        </p>
+      </div>
 
       <LayerDropZone face={face} onAdd={handleAdd} triggerRef={addRef} />
     </div>
