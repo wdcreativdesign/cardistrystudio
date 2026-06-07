@@ -123,21 +123,21 @@ function SceneHelper({
 }
 
 /* ─── Lighting ───────────────────────────────────────────────────── */
-function Lighting({ intensity: i }: { intensity: number }) {
+function Lighting({ intensity: i, angle }: { intensity: number; angle: number }) {
+  const rad = (angle * Math.PI) / 180
+  const r   = 8
+  const kx  =  Math.sin(rad) * r
+  const kz  =  Math.cos(rad) * r
+  const fx  = -Math.cos(rad) * 6
+  const fz  =  Math.sin(rad) * 4
   return (
     <>
-      {/* Ambient — slightly dimmer so specular stands out more */}
       <ambientLight intensity={0.42 * i} color="#f0f0ff" />
-      {/* Key light — strong, top-right, matches env map hot-spot */}
-      <directionalLight position={[5, 9, 5]}   intensity={1.6 * i}  color="#ffffff"  castShadow />
-      {/* Fill — soft blue from left */}
-      <directionalLight position={[-6, 3, 4]}  intensity={0.38 * i} color="#d8e8ff" />
-      {/* Rim — cool backlight */}
-      <directionalLight position={[1, 4, -8]}  intensity={0.22 * i} color="#e8eeff" />
-      {/* Front specular accent — tight point light */}
-      <pointLight       position={[2.5, 4, 6]}  intensity={0.55 * i} color="#ffffff"  decay={2} />
-      {/* Ground warm bounce */}
-      <pointLight       position={[0, -2.5, 3]} intensity={0.08 * i} color="#fff4e0"  decay={2} />
+      <directionalLight position={[kx, 9, kz]}    intensity={1.6 * i}  color="#ffffff"  castShadow />
+      <directionalLight position={[fx, 3, fz]}    intensity={0.38 * i} color="#d8e8ff" />
+      <directionalLight position={[1, 4, -8]}     intensity={0.22 * i} color="#e8eeff" />
+      <pointLight       position={[2.5, 4, 6]}    intensity={0.55 * i} color="#ffffff"  decay={2} />
+      <pointLight       position={[0, -2.5, 3]}   intensity={0.08 * i} color="#fff4e0"  decay={2} />
     </>
   )
 }
@@ -253,10 +253,14 @@ export interface CardSceneProps {
 export function CardScene({ displayedPages, displayCount, tilt, glRef, sceneRef, cameraRef, onReady }: CardSceneProps) {
   // Scene-level settings from the active card (or fallback to first)
   const activePage = displayedPages.find((p) => p.isActive) ?? displayedPages[0]
-  const bgColor        = activePage?.settings.bgColor        ?? '#1d1d1d'
-  const lightIntensity = activePage?.settings.lightIntensity ?? 1.15
-  const cameraFov      = activePage?.settings.cameraFov      ?? 42
-  const cameraMode     = activePage?.settings.cameraMode     ?? 'perspective'
+  const bgColor         = activePage?.settings.bgColor         ?? '#1d1d1d'
+  const lightIntensity  = activePage?.settings.lightIntensity  ?? 1.15
+  const lightAngle      = activePage?.settings.lightAngle      ?? 45
+  const envIntensity    = activePage?.settings.envIntensity    ?? 1.0
+  const shadowOpacity   = activePage?.settings.shadowOpacity   ?? 0.22
+  const shadowBlur      = activePage?.settings.shadowBlur      ?? 2.2
+  const cameraFov       = activePage?.settings.cameraFov       ?? 42
+  const cameraMode      = activePage?.settings.cameraMode      ?? 'perspective'
 
   const positions = CARD_POSITIONS[displayCount] ?? [0]
 
@@ -284,9 +288,9 @@ export function CardScene({ displayedPages, displayCount, tilt, glRef, sceneRef,
       <group name="shadow-layer">
         <ContactShadows
           position={[0, -1.75, 0]}
-          opacity={0.22}
+          opacity={shadowOpacity}
           scale={shadowScale}
-          blur={2.2}
+          blur={shadowBlur}
           far={2.8}
           color="#000000"
         />
@@ -294,7 +298,7 @@ export function CardScene({ displayedPages, displayCount, tilt, glRef, sceneRef,
 
       <EnableLayer1 />
       <ToneMapping />
-      <Lighting intensity={lightIntensity} />
+      <Lighting intensity={lightIntensity} angle={lightAngle} />
       <GradientEnvironment />
 
       {/* ── One Card3D per displayed page, spread along X axis + per-card offset ── */}

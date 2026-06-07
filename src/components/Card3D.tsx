@@ -361,6 +361,7 @@ export function Card3D({ settings, tilt, isActive = false }: Card3DProps) {
   })
 
   const cfg = FINISH_CONFIGS[settings.finish]
+  const envMult = settings.envIntensity ?? 1.0
 
   /* ── Position puce — standard ISO 7810 / EMV ──────────────────────
      Carte horizontale : puce à ~12 mm du bord gauche, ~19 mm du bas
@@ -390,9 +391,9 @@ export function Card3D({ settings, tilt, isActive = false }: Card3DProps) {
   const chipRotZ = isVertical ? -Math.PI / 2 : 0
 
   const faceMat = {
-    metalness:          cfg.metalness * 0.5,
+    metalness:          cfg.metalness,
     roughness:          cfg.roughness,
-    envMapIntensity:    cfg.envMapIntensity,
+    envMapIntensity:    cfg.envMapIntensity * envMult,
     clearcoat:          cfg.clearcoat,
     clearcoatRoughness: cfg.clearcoatRoughness,
   }
@@ -415,8 +416,8 @@ export function Card3D({ settings, tilt, isActive = false }: Card3DProps) {
           color={settings.edgeColor}
           metalness={cfg.metalness}
           roughness={cfg.roughness}
-          envMapIntensity={cfg.envMapIntensity}
-          clearcoat={cfg.clearcoat * 0.5}
+          envMapIntensity={cfg.envMapIntensity * envMult}
+          clearcoat={cfg.clearcoat}
           clearcoatRoughness={cfg.clearcoatRoughness}
           polygonOffset
           polygonOffsetFactor={1}

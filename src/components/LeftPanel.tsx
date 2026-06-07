@@ -756,13 +756,59 @@ export function LeftPanel({
       {/* ── Stylise tab ── */}
       {tab === 'style' && (
         <>
+          <PanelCard title="Texture">
+            <div className="flex flex-col gap-[8px] w-full">
+              {/* chrome, satin, glossy, holographic, rubber — masqués pour l'instant, à activer plus tard */}
+              {(['metallic', 'plastic', 'matte'] as const).map((f) => {
+                const active = activeSettings.finish === f
+                return (
+                  <button
+                    key={f}
+                    onClick={() => onChange({ finish: f })}
+                    className={cn(
+                      'flex items-center justify-center h-[33px] w-full rounded-full text-[14px] font-medium transition-all active:scale-95',
+                      active
+                        ? 'border-2 border-[#9ae600] text-white'
+                        : 'border border-[#242424] text-white hover:bg-white/[0.04]',
+                    )}
+                  >
+                    {f.charAt(0).toUpperCase() + f.slice(1)}
+                  </button>
+                )
+              })}
+            </div>
+          </PanelCard>
+
           <PanelCard title="Lights">
-            <div className="w-full">
+            <div className="w-full space-y-4">
               <SliderRow
                 label="Intensity"
                 value={activeSettings.lightIntensity}
                 min={0} max={2} step={0.05} unit="×"
                 onChange={(v) => onChange({ lightIntensity: v })}
+              />
+              <SliderRow
+                label="Angle"
+                value={activeSettings.lightAngle ?? 45}
+                min={0} max={360} step={1} unit="°"
+                onChange={(v) => onChange({ lightAngle: v })}
+              />
+            </div>
+          </PanelCard>
+
+          <PanelCard title="Shadow">
+            <div className="w-full space-y-4">
+              <SliderRow
+                label="Opacity"
+                value={activeSettings.shadowOpacity ?? 0.22}
+                min={0} max={1} step={0.01} unit=""
+                onChange={(v) => onChange({ shadowOpacity: v })}
+              />
+              <SliderRow
+                label="Blur"
+                value={activeSettings.shadowBlur ?? 2.2}
+                min={0} max={8} step={0.1} unit=""
+                onChange={(v) => onChange({ shadowBlur: v })}
               />
             </div>
           </PanelCard>
