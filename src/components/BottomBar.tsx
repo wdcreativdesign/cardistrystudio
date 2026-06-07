@@ -1,7 +1,7 @@
 import { useState, useRef } from 'react'
-import { cn } from '@/lib/utils'
 import { Icon } from '@/components/ui/icon'
 import { PosesPanel } from './PosesPanel'
+import { SegControl } from '@/components/ui/SegControl'
 import { type CardSettings, type Orientation, type SavedPose } from '@/types'
 
 const ORIENTATIONS: { key: Orientation; label: string }[] = [
@@ -52,22 +52,12 @@ export function BottomBar({ settings, onChange, displayCount, onDisplayCountChan
       </div>
 
       {/* ── CENTER: Orientation segmented control ── */}
-      <div className="flex p-[4px] bg-[#141414] rounded-full h-[40px] items-center">
-        {ORIENTATIONS.map((o) => {
-          const active = settings.orientation === o.key
-          return (
-            <button
-              key={o.key}
-              onClick={() => onChange({ orientation: o.key })}
-              className={cn(
-                'px-[12px] h-[32px] rounded-full text-[14px] font-medium transition-all duration-200 select-none',
-                active ? 'bg-[#242424] text-white' : 'text-[#999] hover:text-white',
-              )}
-            >
-              {o.label}
-            </button>
-          )
-        })}
+      <div className="w-[220px]">
+        <SegControl
+          options={ORIENTATIONS}
+          value={settings.orientation}
+          onChange={(v) => onChange({ orientation: v })}
+        />
       </div>
 
       {/* ── RIGHT: Poses panel ── */}

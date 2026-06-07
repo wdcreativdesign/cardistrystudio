@@ -17,7 +17,7 @@ import { contrastColor } from './lib/utils'
 import { randomizePoses } from './lib/randomize'
 import { supabase } from './lib/supabase'
 import { useCredits, EXPORT_COST } from './hooks/useCredits'
-import { trackExport, trackOpenBuyCredits, trackPurchase, trackSignOut, identifyUser, trackRandomize, trackReset, trackDisplayCountChange, trackOrientationChange, trackImageUpload, trackTabSwitch, trackCameraModeChange, trackAddWorkspace } from './lib/analytics'
+import { trackExport, trackOpenBuyCredits, trackPurchase, trackSignOut, identifyUser, trackRandomize, trackReset, trackDisplayCountChange, trackOrientationChange, trackImageUpload, trackTabSwitch, trackCameraModeChange, trackAddWorkspace, trackDeletePage, trackRenamePage, trackReorderPages } from './lib/analytics'
 import { DEFAULT_FRONT_URL } from './constants'
 
 /* ── Default card settings ───────────────────────────────────────── */
@@ -623,6 +623,7 @@ export default function App() {
   }, [workspaces.length])
 
   const handleDeleteWorkspace = useCallback((id: string) => {
+    trackDeletePage()
     setWorkspaces((prev) => {
       if (prev.length <= 1) return prev
       const next = prev.filter((w) => w.id !== id)
@@ -636,10 +637,12 @@ export default function App() {
   }, [])
 
   const handleRenameWorkspace = useCallback((id: string, name: string) => {
+    trackRenamePage()
     setWorkspaces((prev) => prev.map((w) => w.id === id ? { ...w, name } : w))
   }, [])
 
   const handleReorderWorkspaces = useCallback((ordered: Workspace[]) => {
+    trackReorderPages()
     setWorkspaces(ordered)
   }, [])
 

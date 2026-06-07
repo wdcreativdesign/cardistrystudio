@@ -2,8 +2,9 @@ import { useState, useRef, useEffect, useCallback } from 'react'
 import { Icon } from '@/components/ui/icon'
 import { cn } from '@/lib/utils'
 import { SliderRow } from '@/components/SliderRow'
+import { SegControl } from '@/components/ui/SegControl'
 import { type Workspace, type CardSettings, type ImageLayer, type BlendMode } from '@/types'
-import { trackImageUpload } from '@/lib/analytics'
+import { trackImageUpload, trackLayerAdd, trackLayerDelete, trackLayerRename, trackLayerReorder, trackLayerBlendMode, trackLayerOpacity, trackFaceSwitchLayer, trackCardColorChange, trackEdgeColorChange, trackTextureChange, trackLightIntensityChange, trackLightAngleChange, trackShadowChange } from '@/lib/analytics'
 
 // ── Collapsible card ──────────────────────────────────────────────
 function PanelCard({ title, children, defaultOpen = true, onAdd, addRef }: {
@@ -47,40 +48,7 @@ function PanelCard({ title, children, defaultOpen = true, onAdd, addRef }: {
 }
 
 // ── Segmented control ─────────────────────────────────────────────
-function SegControl<T extends string>({ options, value, onChange }: {
-  options: { key: T; label: string }[]
-  value:   T
-  onChange: (v: T) => void
-}) {
-  const activeIndex = options.findIndex((o) => o.key === value)
-  const pct = (activeIndex / options.length) * 100
 
-  return (
-    <div className="relative flex items-center bg-[#242424] rounded-full p-[4px] h-[40px] w-full">
-      {/* Sliding indicator */}
-      <div
-        className="absolute top-[4px] bottom-[4px] rounded-full bg-[#141414] pointer-events-none"
-        style={{
-          width:      `calc((100% - 8px) / ${options.length})`,
-          left:       `calc(4px + ${activeIndex} * (100% - 8px) / ${options.length})`,
-          transition: 'left 200ms cubic-bezier(0.4,0,0.2,1)',
-        }}
-      />
-      {options.map(({ key, label }) => (
-        <button
-          key={key}
-          onClick={() => onChange(key)}
-          className={cn(
-            'relative flex-1 h-[32px] rounded-full text-[14px] font-medium transition-colors duration-200 z-10',
-            value === key ? 'text-white' : 'text-[#999]',
-          )}
-        >
-          {label}
-        </button>
-      ))}
-    </div>
-  )
-}
 
 // ── Inline rename ─────────────────────────────────────────────────
 function InlineRename({ value, onDone }: { value: string; onDone: (v: string) => void }) {
@@ -558,22 +526,27 @@ function LayersSection({ settings, onChange, addRef }: {
   const [dropTarget, setDropTarget] = useState<{ index: number; pos: 'before' | 'after' } | null>(null)
 
   function handleAdd(newLayer: ImageLayer) {
+    trackLayerAdd(face)
     onChange({ [layerKey]: [{ ...newLayer, blendMode: newLayer.blendMode ?? 'source-over', opacity: newLayer.opacity ?? 100 }, ...layers] })
   }
 
   function handleDelete(id: string) {
+    trackLayerDelete(face)
     onChange({ [layerKey]: layers.filter((l) => l.id !== id) })
   }
 
   function handleChangeBlend(id: string, mode: BlendMode) {
+    trackLayerBlendMode(mode)
     onChange({ [layerKey]: layers.map((l) => l.id === id ? { ...l, blendMode: mode } : l) })
   }
 
   function handleChangeOpacity(id: string, opacity: number) {
+    trackLayerOpacity(opacity)
     onChange({ [layerKey]: layers.map((l) => l.id === id ? { ...l, opacity } : l) })
   }
 
   function handleRename(id: string, name: string) {
+    trackLayerRename()
     onChange({ [layerKey]: layers.map((l) => l.id === id ? { ...l, name } : l) })
   }
 
@@ -602,6 +575,7 @@ function LayersSection({ settings, onChange, addRef }: {
     const insertAt = pos === 'after' ? toIndex + 1 : toIndex
 
     if (from === insertAt || from === insertAt - 1) { handleDragEnd(); return }
+    trackLayerReorder(face)
 
     const next = [...layers]
     const [moved] = next.splice(from, 1)
@@ -616,7 +590,7 @@ function LayersSection({ settings, onChange, addRef }: {
       <SegControl
         options={[{ key: 'front', label: 'Front' }, { key: 'back', label: 'Back' }]}
         value={face}
-        onChange={setFace}
+        onChange={(v) => { trackFaceSwitchLayer(v); setFace(v) }}
       />
 
       {/* État vide */}
@@ -773,13 +747,13 @@ export function LeftPanel({
               <ColorRow
                 label="Card"
                 value={activeSettings.cardColor}
-                onChange={(v) => onChange({ cardColor: v })}
+                onChange={(v) => { trackCardColorChange(); onChange({ cardColor: v }) }}
               />
               {/* Edge color */}
               <ColorRow
                 label="Edge"
                 value={activeSettings.edgeColor}
-                onChange={(v) => onChange({ edgeColor: v })}
+                onChange={(v) => { trackEdgeColorChange(); onChange({ edgeColor: v }) }}
               />
             </div>
           </PanelCard>
@@ -797,7 +771,7 @@ export function LeftPanel({
                 return (
                   <button
                     key={f}
-                    onClick={() => onChange({ finish: f })}
+                    onClick={() => { trackTextureChange(f); onChange({ finish: f }) }}
                     className={cn(
                       'flex items-center justify-center h-[33px] w-full rounded-full text-[14px] font-medium transition-all active:scale-95',
                       active
@@ -818,13 +792,13 @@ export function LeftPanel({
                 label="Intensity"
                 value={activeSettings.lightIntensity}
                 min={0} max={2} step={0.05} unit="×"
-                onChange={(v) => onChange({ lightIntensity: v })}
+                onChange={(v) => { trackLightIntensityChange(v); onChange({ lightIntensity: v }) }}
               />
               <SliderRow
                 label="Angle"
                 value={activeSettings.lightAngle ?? 45}
                 min={0} max={360} step={1} unit="°"
-                onChange={(v) => onChange({ lightAngle: v })}
+                onChange={(v) => { trackLightAngleChange(v); onChange({ lightAngle: v }) }}
               />
             </div>
           </PanelCard>
@@ -835,13 +809,13 @@ export function LeftPanel({
                 label="Opacity"
                 value={activeSettings.shadowOpacity ?? 0.22}
                 min={0} max={1} step={0.01} unit=""
-                onChange={(v) => onChange({ shadowOpacity: v })}
+                onChange={(v) => { trackShadowChange('opacity', v); onChange({ shadowOpacity: v }) }}
               />
               <SliderRow
                 label="Blur"
                 value={activeSettings.shadowBlur ?? 2.2}
                 min={0} max={8} step={0.1} unit=""
-                onChange={(v) => onChange({ shadowBlur: v })}
+                onChange={(v) => { trackShadowChange('blur', v); onChange({ shadowBlur: v }) }}
               />
             </div>
           </PanelCard>

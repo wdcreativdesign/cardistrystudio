@@ -4,6 +4,7 @@ import { SliderRow } from '@/components/SliderRow'
 import { Switch } from '@/components/ui/switch'
 import { cn } from '@/lib/utils'
 import { Icon } from '@/components/ui/icon'
+import { SegControl } from '@/components/ui/SegControl'
 import { type CardSettings, type CameraMode, type Finish } from '@/types'
 
 /* ─── Helpers ──────────────────────────────────────────────────── */
@@ -214,9 +215,9 @@ function BgSection({ value, onChange }: { value: string; onChange: (v: string) =
 
       {hasBg && <>
       {/* Mode toggle */}
-      <PillToggle
+      <SegControl
+        options={[{ key: 'solid', label: 'Solid' }, { key: 'gradient', label: 'Gradient' }]}
         value={gradMode ? 'gradient' : 'solid'}
-        options={[{ value: 'solid', label: 'Solid' }, { value: 'gradient', label: 'Gradient' }]}
         onChange={(v) => { if (v === 'gradient' && !gradMode) fireGrad(); else if (v === 'solid') onChange(solidHex) }}
       />
 
@@ -496,20 +497,14 @@ export function ControlPanel({ settings, displayCount, onChange, onReset, onRand
 
       {/* ── Navigation ── */}
       <div className="h-[72px] flex items-center px-4 border-b border-white/[0.06]">
-        <div className="flex gap-0.5 p-1 bg-[#252525] rounded-full w-full">
-          {(['create', 'export'] as const).map((t) => (
-            <button
-              key={t}
-              onClick={() => onTabChange(t)}
-              className={cn(
-                'flex-1 text-[14px] py-[7px] rounded-full transition-all',
-                tab === t ? 'bg-[#141414] text-white font-medium shadow-sm' : 'text-[#999] hover:text-white/60 font-medium',
-              )}
-            >
-              {t === 'create' ? 'Moove' : 'Export'}
-            </button>
-          ))}
-        </div>
+        <SegControl
+          options={[
+            { key: 'create', label: 'Moove' },
+            { key: 'export', label: 'Export' },
+          ]}
+          value={tab}
+          onChange={onTabChange}
+        />
       </div>
 
       {/* ── Create tab ── */}
@@ -560,12 +555,12 @@ export function ControlPanel({ settings, displayCount, onChange, onReset, onRand
 
           {/* Camera */}
           <Section title="Camera">
-            <PillToggle
-              value={settings.cameraMode ?? 'perspective'}
+            <SegControl
               options={[
-                { value: 'perspective', label: 'Perspective' },
-                { value: 'isometric',   label: 'Isometric'   },
+                { key: 'perspective', label: 'Perspective' },
+                { key: 'isometric',  label: 'Isometric'   },
               ]}
+              value={settings.cameraMode ?? 'perspective'}
               onChange={(v) => onChange({ cameraMode: v as CameraMode })}
             />
             {(settings.cameraMode ?? 'perspective') === 'perspective' && (

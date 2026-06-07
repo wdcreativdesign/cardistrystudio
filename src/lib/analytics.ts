@@ -135,3 +135,79 @@ export function trackCameraModeChange(mode: string) {
 export function trackAddWorkspace() {
   trackEvent('add_workspace')
 }
+
+/* ── Pages ─────────────────────────────────────────────────────────── */
+
+export function trackDeletePage() {
+  trackEvent('page_delete')
+}
+
+export function trackRenamePage() {
+  trackEvent('page_rename')
+}
+
+export function trackReorderPages() {
+  trackEvent('page_reorder')
+}
+
+/* ── Layers ─────────────────────────────────────────────────────────── */
+
+export function trackLayerAdd(face: 'front' | 'back') {
+  trackEvent('layer_add', { face })
+}
+
+export function trackLayerDelete(face: 'front' | 'back') {
+  trackEvent('layer_delete', { face })
+}
+
+export function trackLayerRename() {
+  trackEvent('layer_rename')
+}
+
+export function trackLayerReorder(face: 'front' | 'back') {
+  trackEvent('layer_reorder', { face })
+}
+
+export function trackLayerBlendMode(mode: string) {
+  trackEvent('layer_blend_mode_change', { mode })
+}
+
+export function trackLayerOpacity(opacity: number) {
+  trackEvent('layer_opacity_change', { opacity })
+}
+
+/* ── Card colors ───────────────────────────────────────────────────── */
+
+export function trackCardColorChange() {
+  trackEvent('card_color_change')
+}
+
+export function trackEdgeColorChange() {
+  trackEvent('edge_color_change')
+}
+
+/* ── Texture / Finish ──────────────────────────────────────────────── */
+
+export function trackTextureChange(finish: string) {
+  trackEvent('texture_change', { finish })
+}
+
+/* ── Lights & Shadow ───────────────────────────────────────────────── */
+
+export function trackLightIntensityChange(value: number) {
+  trackEvent('light_intensity_change', { value })
+}
+
+export function trackLightAngleChange(value: number) {
+  trackEvent('light_angle_change', { value })
+}
+
+export function trackShadowChange(param: 'opacity' | 'blur', value: number) {
+  trackEvent('shadow_change', { param, value })
+}
+
+/* ── Tab switch (Face) ─────────────────────────────────────────────── */
+
+export function trackFaceSwitchLayer(face: 'front' | 'back') {
+  trackEvent('layer_face_switch', { face })
+}
