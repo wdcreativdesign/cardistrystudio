@@ -1009,7 +1009,7 @@ export default function App() {
       {/* ── Header bar — fixed full width, above everything ── */}
       <Header
         onRestart={handleRestart}
-        onReset={handleReset}
+        onReset={handleRestart}
         onRoadmap={() => setShowRoadmap(true)}
         onLogoClick={handleLogoClick}
         credits={displayCredits}
