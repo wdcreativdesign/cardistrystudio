@@ -756,29 +756,6 @@ export function LeftPanel({
       {/* ── Stylise tab ── */}
       {tab === 'style' && (
         <>
-          {/* Texture section */}
-          <PanelCard title="Texture">
-            <div className="flex flex-col gap-[8px] w-full">
-              {(['metallic', 'plastic', 'matte'] as const).map((f) => {
-                const active = activeSettings.finish === f
-                return (
-                  <button
-                    key={f}
-                    onClick={() => onChange({ finish: f })}
-                    className={cn(
-                      'flex items-center justify-center h-[33px] w-full rounded-full border text-[14px] font-medium transition-colors',
-                      active
-                        ? 'border-white text-white'
-                        : 'border-[#242424] text-white hover:border-white/40',
-                    )}
-                  >
-                    {f.charAt(0).toUpperCase() + f.slice(1)}
-                  </button>
-                )
-              })}
-            </div>
-          </PanelCard>
-
           <PanelCard title="Lights">
             <div className="w-full">
               <SliderRow
