@@ -83,7 +83,11 @@ const LS_ACTIVE_WS  = 'cs-active-ws'
 
 /* Migre les vieilles valeurs par défaut vers les nouvelles */
 function migrateWorkspaces(workspaces: Workspace[]): Workspace[] {
-  return workspaces.map((ws) => ({
+  return workspaces.map((ws) => {
+    // Normaliser : toutes les pages d'un workspace partagent le même bgColor (celui de la page active)
+    const activePage   = ws.pages.find((p) => p.id === ws.activePageId) ?? ws.pages[0]
+    const sharedBgColor = (activePage?.settings as any)?.bgColor ?? DEFAULT_SETTINGS.bgColor
+    return {
     ...ws,
     pages: ws.pages.map((p) => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -102,7 +106,7 @@ function migrateWorkspaces(workspaces: Workspace[]): Workspace[] {
         ...p,
         settings: {
           ...p.settings,
-          bgColor:          s.bgColor   === '#f0f0f5' ? '#1d1d1d' : s.bgColor,
+          bgColor:          sharedBgColor === '#f0f0f5' ? '#1d1d1d' : sharedBgColor,
           edgeColor:        s.edgeColor === '#009FFF' ? '#9AE600' : s.edgeColor,
           cardColor:        s.cardColor        ?? '#111111',
           lightAngle:       s.lightAngle       ?? 45,
@@ -114,7 +118,8 @@ function migrateWorkspaces(workspaces: Workspace[]): Workspace[] {
         },
       }
     }),
-  }))
+  }
+  })
 }
 
 function loadWorkspaces(): { workspaces: Workspace[]; activeWorkspaceId: string } {
@@ -505,6 +510,18 @@ export default function App() {
   const handleChange = useCallback(
     (patch: Partial<CardSettings>) => {
       if ('cameraMode' in patch && patch.cameraMode) trackCameraModeChange(patch.cameraMode)
+
+      // bgColor est global au workspace — on le propage à toutes les pages
+      if ('bgColor' in patch) {
+        patchWs((ws) => ({
+          ...ws,
+          pages: ws.pages.map((p) => ({ ...p, settings: { ...p.settings, bgColor: patch.bgColor! } })),
+        }))
+        const { bgColor: _, ...rest } = patch
+        if (Object.keys(rest).length > 0) update(rest)
+        return
+      }
+
       if (
         'orientation' in patch &&
         patch.orientation !== settings.orientation &&
@@ -515,7 +532,7 @@ export default function App() {
         update(patch)
       }
     },
-    [settings.orientation, settings.frontLayers, settings.backLayers, update],
+    [settings.orientation, settings.frontLayers, settings.backLayers, update, patchWs],
   )
 
   const confirmOrientationChange = useCallback(() => {
@@ -593,8 +610,10 @@ export default function App() {
     trackDisplayCountChange(count)
     patchWs((ws) => {
       const pages = [...ws.pages]
+      // Hériter le bgColor de la première page existante
+      const sharedBgColor = pages[0]?.settings.bgColor ?? DEFAULT_SETTINGS.bgColor
       while (pages.length < count) {
-        pages.push({ id: makeId(), name: `Card ${pages.length + 1}`, settings: { ...DEFAULT_SETTINGS } })
+        pages.push({ id: makeId(), name: `Card ${pages.length + 1}`, settings: { ...DEFAULT_SETTINGS, bgColor: sharedBgColor } })
       }
       const visibleIds   = pages.slice(0, count).map((p) => p.id)
       const activePageId = visibleIds.includes(ws.activePageId) ? ws.activePageId : pages[0].id
@@ -610,7 +629,9 @@ export default function App() {
   /* ── Workspace management ── */
   const handleAddWorkspace = useCallback(() => {
     trackAddWorkspace()
-    const page: CardPage = { id: makeId(), name: 'Card 1', settings: { ...DEFAULT_SETTINGS } }
+    // Hériter le bgColor courant pour que le fond reste cohérent
+    const currentBgColor = activeWsRef.current.pages[0]?.settings.bgColor ?? DEFAULT_SETTINGS.bgColor
+    const page: CardPage = { id: makeId(), name: 'Card 1', settings: { ...DEFAULT_SETTINGS, bgColor: currentBgColor } }
     const ws: Workspace  = {
       id:           makeId(),
       name:         `Page${String(workspaces.length + 1).padStart(2, '0')}`,
