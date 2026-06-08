@@ -55,7 +55,6 @@ const PAY_LOGOS = [
   { src: '/pay-visa-logo.svg',      withBg: true  },
   { src: '/pay-mastercard-logo.svg', withBg: true  },
   { src: '/pay-applepay-card.svg',  withBg: false },
-  { src: '/pay-klarna-card.svg',    withBg: false },
 ]
 
 interface BuyCreditsModalProps {
