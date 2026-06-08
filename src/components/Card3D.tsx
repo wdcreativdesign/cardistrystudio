@@ -342,8 +342,9 @@ export function Card3D({ settings, tilt, isActive = false }: Card3DProps) {
   }, [])
 
   /* ── Textures utilisateur (composite multi-layers) ── */
-  const frontTex = useCompositeTexture(settings.frontLayers, settings.cardColor, '/defaults/BaseFront.png')
-  const backTex  = useCompositeTexture(settings.backLayers,  settings.cardColor, '/defaults/BaseBack.png')
+  // TEMP: placeholders masqués pour la vidéo de démo — remettre après
+  const frontTex = useCompositeTexture(settings.frontLayers, settings.cardColor, /* '/defaults/BaseFront.png' */ undefined)
+  const backTex  = useCompositeTexture(settings.backLayers,  settings.cardColor, /* '/defaults/BaseBack.png'  */ undefined)
 
   /* ── Animation frame ─────────────────────────────────────────── */
   useFrame((_, delta) => {
