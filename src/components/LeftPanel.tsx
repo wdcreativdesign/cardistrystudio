@@ -186,18 +186,31 @@ function SceneRow({ workspace, index, isActive, canDelete, isDragging, dropIndic
   )
 }
 
-// ── Blend mode options ────────────────────────────────────────────
-const BLEND_MODES: { value: BlendMode; label: string }[] = [
-  { value: 'source-over', label: 'Normal'     },
-  { value: 'multiply',    label: 'Multiply'   },
-  { value: 'screen',      label: 'Screen'     },
-  { value: 'overlay',     label: 'Overlay'    },
-  { value: 'darken',      label: 'Darken'     },
-  { value: 'lighten',     label: 'Lighten'    },
-  { value: 'color-dodge', label: 'Dodge'      },
-  { value: 'color-burn',  label: 'Burn'       },
-  { value: 'difference',  label: 'Difference' },
-  { value: 'exclusion',   label: 'Exclusion'  },
+// ── Blend mode options (groupés avec séparateurs) ─────────────────
+type BlendGroup = { sep: true } | { value: BlendMode; label: string }
+
+const BLEND_MODES: BlendGroup[] = [
+  { value: 'source-over', label: 'Normal'      },
+  { sep: true },
+  { value: 'darken',      label: 'Darken'      },
+  { value: 'multiply',    label: 'Multiply'    },
+  { value: 'color-burn',  label: 'Color burn'  },
+  { sep: true },
+  { value: 'lighten',     label: 'Lighten'     },
+  { value: 'screen',      label: 'Screen'      },
+  { value: 'color-dodge', label: 'Color dodge' },
+  { sep: true },
+  { value: 'overlay',     label: 'Overlay'     },
+  { value: 'soft-light',  label: 'Soft light'  },
+  { value: 'hard-light',  label: 'Hard light'  },
+  { sep: true },
+  { value: 'difference',  label: 'Difference'  },
+  { value: 'exclusion',   label: 'Exclusion'   },
+  { sep: true },
+  { value: 'hue',         label: 'Hue'         },
+  { value: 'saturation',  label: 'Saturation'  },
+  { value: 'color',       label: 'Color'       },
+  { value: 'luminosity',  label: 'Luminosity'  },
 ]
 
 // ── Color row (swatch + hex) — même pattern d'input que SliderRow ──
@@ -409,23 +422,27 @@ function LayerRow({ layer, index, isDragging, dropIndicator, onDelete, onRename,
             <Icon name="opacity" size={16} />
           </button>
           {blendOpen && (
-            <div className="absolute right-0 bottom-full mb-1 z-50 w-[130px] bg-[#1a1a1a] border border-[#2a2a2a] rounded-[10px] overflow-hidden shadow-xl py-1">
-              {BLEND_MODES.map((m) => (
-                <button
-                  key={m.value}
-                  onMouseEnter={() => onChangeBlend(m.value)}
-                  onClick={() => { committedRef.current = m.value; closeMenu(true) }}
-                  className={cn(
-                    'w-full flex items-center justify-between px-3 py-1.5 text-[12px] transition-colors',
-                    committedRef.current === m.value
-                      ? 'text-[#9ae600] bg-white/[0.04]'
-                      : 'text-white/60 hover:text-white hover:bg-white/[0.06]',
-                  )}
-                >
-                  {m.label}
-                  {committedRef.current === m.value && <Icon name="check" size={12} />}
-                </button>
-              ))}
+            <div className="absolute right-0 bottom-full mb-1 z-50 w-[140px] bg-[#1a1a1a] border border-[#2a2a2a] rounded-[10px] overflow-hidden shadow-xl py-1">
+              {BLEND_MODES.map((m, i) =>
+                'sep' in m
+                  ? <div key={`sep-${i}`} className="h-px bg-white/[0.08] my-1" />
+                  : (
+                    <button
+                      key={m.value}
+                      onMouseEnter={() => onChangeBlend(m.value)}
+                      onClick={() => { committedRef.current = m.value; closeMenu(true) }}
+                      className={cn(
+                        'w-full flex items-center justify-between px-3 py-1.5 text-[12px] transition-colors',
+                        committedRef.current === m.value
+                          ? 'text-white bg-white/[0.08]'
+                          : 'text-white/60 hover:text-white hover:bg-white/[0.06]',
+                      )}
+                    >
+                      {m.label}
+                      {committedRef.current === m.value && <Icon name="check" size={12} />}
+                    </button>
+                  )
+              )}
             </div>
           )}
         </div>
@@ -479,10 +496,11 @@ function LayerDropZone({ face, onAdd, triggerRef }: {
 }) {
   const localRef = useRef<HTMLInputElement>(null)
   const inputRef = (triggerRef ?? localRef) as React.RefObject<HTMLInputElement>
+  const [dragOver, setDragOver] = useState(false)
 
   const handleFile = useCallback((file: File) => {
     if (!file.type.startsWith('image/') && file.type !== 'image/svg+xml') return
-    const name = file.name.replace(/\.[^/.]+$/, '') // strip extension
+    const name = file.name.replace(/\.[^/.]+$/, '')
     const reader = new FileReader()
     reader.onload = (e) => {
       const image = e.target?.result as string
@@ -496,18 +514,36 @@ function LayerDropZone({ face, onAdd, triggerRef }: {
 
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault()
+    setDragOver(false)
     const file = e.dataTransfer.files[0]
     if (file) handleFile(file)
   }, [handleFile])
 
   return (
-    <input
-      ref={inputRef}
-      type="file"
-      accept="image/*,.svg"
-      className="sr-only"
-      onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFile(f); e.target.value = '' }}
-    />
+    <div
+      role="button"
+      tabIndex={0}
+      onClick={() => inputRef.current?.click()}
+      onKeyDown={(e) => e.key === 'Enter' && inputRef.current?.click()}
+      onDrop={handleDrop}
+      onDragOver={(e) => { e.preventDefault(); setDragOver(true) }}
+      onDragLeave={() => setDragOver(false)}
+      className={cn(
+        'w-full flex flex-col items-center justify-center gap-[4px] px-[8px] py-[16px] rounded-[8px] border border-dashed cursor-pointer transition-all select-none',
+        dragOver ? 'border-[#9ae600] bg-[#9ae600]/[0.04]' : 'border-[#242424] hover:border-[#555]',
+      )}
+    >
+      <Icon name="image" size={20} className={dragOver ? 'text-[#9ae600]' : 'text-white'} />
+      <span className="text-[12px] font-medium text-white">Add layer</span>
+      <span className="text-[12px] font-medium text-[#999]">PNG, JPG, SVG</span>
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/*,.svg"
+        className="sr-only"
+        onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFile(f); e.target.value = '' }}
+      />
+    </div>
   )
 }
 
@@ -596,7 +632,7 @@ function LayersSection({ settings, onChange, addRef }: {
       {/* État vide */}
       {layers.length === 0 && (
         <p className="text-[12px] font-medium text-white text-center w-full">
-          Drop an image to get started
+          No layer yet
         </p>
       )}
 
@@ -624,20 +660,13 @@ function LayersSection({ settings, onChange, addRef }: {
         </div>
       )}
 
-      {/* CTA + hint — toujours visible */}
-      <div className="flex flex-col gap-[8px] items-start w-full">
-        <button
-          onClick={() => (addRef as React.RefObject<HTMLInputElement>)?.current?.click()}
-          className="flex items-center justify-center h-[40px] w-full rounded-full bg-[#242424] hover:brightness-110 transition-all"
-        >
-          <span className="text-[16px] font-medium text-white">Add layer</span>
-        </button>
-        <p className="text-[12px] font-medium text-white text-center w-full">
-          Recommended size : 484x306px
-        </p>
-      </div>
-
+      {/* Drop zone — toujours visible */}
       <LayerDropZone face={face} onAdd={handleAdd} triggerRef={addRef} />
+
+      {/* Hint */}
+      <p className="text-[12px] font-medium text-white text-center w-full">
+        Recommended size : 484×306px
+      </p>
     </div>
   )
 }
@@ -736,7 +765,7 @@ export function LeftPanel({
           </PanelCard>
 
           {/* Layers section */}
-          <PanelCard title="Layers" onAdd={() => addLayerRef.current?.click()}>
+          <PanelCard title="Layers">
             <LayersSection settings={activeSettings} onChange={onChange} addRef={addLayerRef} />
           </PanelCard>
 

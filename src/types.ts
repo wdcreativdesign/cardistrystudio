@@ -4,15 +4,21 @@ export type CameraMode = 'perspective' | 'isometric'
 
 export type BlendMode =
   | 'source-over'
-  | 'multiply'
-  | 'screen'
-  | 'overlay'
   | 'darken'
-  | 'lighten'
-  | 'color-dodge'
+  | 'multiply'
   | 'color-burn'
+  | 'lighten'
+  | 'screen'
+  | 'color-dodge'
+  | 'overlay'
+  | 'soft-light'
+  | 'hard-light'
   | 'difference'
   | 'exclusion'
+  | 'hue'
+  | 'saturation'
+  | 'color'
+  | 'luminosity'
 
 export interface ImageLayer {
   id:        string

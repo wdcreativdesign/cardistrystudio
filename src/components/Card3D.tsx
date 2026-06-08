@@ -101,7 +101,7 @@ function loadImageAsTexture(
 }
 
 /* ─── Composite N image layers → single THREE.Texture ──────────── */
-function useCompositeTexture(layers: ImageLayer[], cardColor: string): THREE.Texture | null {
+function useCompositeTexture(layers: ImageLayer[], cardColor: string, placeholderSrc?: string): THREE.Texture | null {
   const [tex, setTex] = useState<THREE.Texture | null>(null)
 
   // Clé stable : cardColor + ids + blendModes + début de chaque data URL
@@ -109,8 +109,30 @@ function useCompositeTexture(layers: ImageLayer[], cardColor: string): THREE.Tex
 
   useEffect(() => {
     if (layers.length === 0) {
-      setTex((prev) => { prev?.dispose(); return null })
-      return
+      // Charger le placeholder si disponible, sinon laisser null
+      if (!placeholderSrc) {
+        setTex((prev) => { prev?.dispose(); return null })
+        return
+      }
+      const signal = { cancelled: false }
+      const img = new Image()
+      img.onload = () => {
+        if (signal.cancelled) return
+        const canvas = document.createElement('canvas')
+        canvas.width  = img.naturalWidth  || 2048
+        canvas.height = img.naturalHeight || 2048
+        const ctx = canvas.getContext('2d')!
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
+        const newTex = new THREE.CanvasTexture(canvas)
+        newTex.colorSpace      = THREE.SRGBColorSpace
+        newTex.minFilter       = THREE.LinearMipmapLinearFilter
+        newTex.generateMipmaps = true
+        newTex.needsUpdate     = true
+        setTex((prev) => { prev?.dispose(); return newTex })
+      }
+      img.onerror = () => { if (!signal.cancelled) setTex((prev) => { prev?.dispose(); return null }) }
+      img.src = placeholderSrc
+      return () => { signal.cancelled = true }
     }
 
     const signal = { cancelled: false }
@@ -320,8 +342,8 @@ export function Card3D({ settings, tilt, isActive = false }: Card3DProps) {
   }, [])
 
   /* ── Textures utilisateur (composite multi-layers) ── */
-  const frontTex = useCompositeTexture(settings.frontLayers, settings.cardColor)
-  const backTex  = useCompositeTexture(settings.backLayers,  settings.cardColor)
+  const frontTex = useCompositeTexture(settings.frontLayers, settings.cardColor, '/defaults/BaseFront.png')
+  const backTex  = useCompositeTexture(settings.backLayers,  settings.cardColor, '/defaults/BaseBack.png')
 
   /* ── Animation frame ─────────────────────────────────────────── */
   useFrame((_, delta) => {

@@ -22,8 +22,8 @@ import { DEFAULT_FRONT_URL } from './constants'
 
 /* ── Default card settings ───────────────────────────────────────── */
 const DEFAULT_SETTINGS: CardSettings = {
-  rotX: -8,
-  rotY: 22,
+  rotX: -34,
+  rotY: 11,
   rotZ: 0,
   zoom: 1,
   posX: 0,
