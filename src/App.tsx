@@ -17,7 +17,7 @@ import { contrastColor } from './lib/utils'
 import { randomizePoses } from './lib/randomize'
 import { supabase } from './lib/supabase'
 import { useCredits, EXPORT_COST } from './hooks/useCredits'
-import { trackExport, trackOpenBuyCredits, trackPurchase, identifyUser, trackRandomize, trackReset, trackDisplayCountChange, trackOrientationChange, trackImageUpload, trackTabSwitch, trackCameraModeChange, trackAddWorkspace, trackDeletePage, trackRenamePage, trackReorderPages } from './lib/analytics'
+import { trackExport, trackOpenBuyCredits, trackPurchase, identifyUser, trackRandomize, trackReset, trackDisplayCountChange, trackOrientationChange, trackImageUpload, trackFirstImageUpload, trackTabSwitch, trackCameraModeChange, trackAddWorkspace, trackDeletePage, trackRenamePage, trackReorderPages, trackPaywallSeen, trackCheckoutAbandoned, trackExportSuccess } from './lib/analytics'
 import { DEFAULT_FRONT_URL } from './constants'
 
 /* ── Default card settings ───────────────────────────────────────── */
@@ -398,13 +398,14 @@ export default function App() {
   }))
 
   /* ── Refs (stable for use inside callbacks) ── */
-  const glRef        = useRef<THREE.WebGLRenderer | null>(null)
-  const sceneRef     = useRef<THREE.Scene | null>(null)
-  const cameraRef    = useRef<THREE.Camera | null>(null)
-  const isDragging   = useRef(false)
-  const lastPointer  = useRef({ x: 0, y: 0 })
-  const pointerStart = useRef({ x: 0, y: 0 })
-  const containerRef = useRef<HTMLDivElement>(null)
+  const glRef           = useRef<THREE.WebGLRenderer | null>(null)
+  const sceneRef        = useRef<THREE.Scene | null>(null)
+  const cameraRef       = useRef<THREE.Camera | null>(null)
+  const isDragging      = useRef(false)
+  const lastPointer     = useRef({ x: 0, y: 0 })
+  const pointerStart    = useRef({ x: 0, y: 0 })
+  const containerRef    = useRef<HTMLDivElement>(null)
+  const hasUploadedRef  = useRef(false) // pour first_image_upload
 
   /* ── Drag throttle — bufferise les deltas, flush 1× par frame ── */
   const dragBuf = useRef<Partial<{ rotX: number; rotY: number; posX: number; posY: number; autoRotate: boolean }>>({})
@@ -486,6 +487,7 @@ export default function App() {
       reader.onload = (ev) => {
         const dataUrl = ev.target?.result as string
         trackImageUpload('paste')
+        if (!hasUploadedRef.current) { hasUploadedRef.current = true; trackFirstImageUpload('paste') }
         patchWs((ws) => ({
           ...ws,
           pages: ws.pages.map((p) => {
@@ -510,6 +512,18 @@ export default function App() {
   const handleChange = useCallback(
     (patch: Partial<CardSettings>) => {
       if ('cameraMode' in patch && patch.cameraMode) trackCameraModeChange(patch.cameraMode)
+
+      // first_image_upload — détecter le premier layer ajouté de la session
+      if (('frontLayers' in patch || 'backLayers' in patch) && !hasUploadedRef.current) {
+        const newFront = patch.frontLayers ?? settings.frontLayers
+        const newBack  = patch.backLayers  ?? settings.backLayers
+        const wasEmpty = settings.frontLayers.length === 0 && settings.backLayers.length === 0
+        if (wasEmpty && (newFront.length > 0 || newBack.length > 0)) {
+          hasUploadedRef.current = true
+          const side = newFront.length > 0 ? 'front' : 'back'
+          trackFirstImageUpload(side)
+        }
+      }
 
       // bgColor est global au workspace — on le propage à toutes les pages
       if ('bgColor' in patch) {
@@ -855,6 +869,7 @@ export default function App() {
         const link = document.createElement('a')
         link.download = `cardistrystudio-export-${EXPORT_W}x${EXPORT_H}@${opts.scale}x.${ext}`
         link.href = finalUrl; link.click()
+        trackExportSuccess(ext, opts.scale)
       }
       /* Restore canvas size + camera early for gradient path */
       gl.setPixelRatio(origDpr)
@@ -896,6 +911,7 @@ export default function App() {
 
     const ext  = isTransparent ? 'png' : opts.format
     trackExport(ext, opts.scale)
+    trackExportSuccess(ext, opts.scale)
     triggerFeedbackIfNeeded()
     const link = document.createElement('a')
     link.download = `cardistrystudio-export-${EXPORT_W}x${EXPORT_H}@${opts.scale}x.${ext}`
@@ -915,6 +931,7 @@ export default function App() {
 
     if ((credits ?? 0) < EXPORT_COST) {
       trackOpenBuyCredits()
+      trackPaywallSeen('no_credits')
       setShowBuyCredits(true)
       return
     }
@@ -927,6 +944,7 @@ export default function App() {
 
     if (error) {
       console.error('spend_credits error:', error)
+      trackPaywallSeen('error')
       setShowBuyCredits(true)
       return
     }
@@ -1209,7 +1227,7 @@ export default function App() {
       {showBuyCredits && (
         <BuyCreditsModal
           currentBalance={displayCredits ?? 0}
-          onClose={() => setShowBuyCredits(false)}
+          onClose={() => { trackCheckoutAbandoned(); setShowBuyCredits(false) }}
         />
       )}
 

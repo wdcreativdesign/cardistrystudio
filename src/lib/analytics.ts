@@ -78,6 +78,20 @@ export function trackEventDebounced(
   }, delay))
 }
 
+/* ── Funnel CRO ─────────────────────────────────────────────────── */
+
+export function trackPaywallSeen(trigger: 'no_credits' | 'error') {
+  trackEvent('paywall_seen', { trigger })
+}
+
+export function trackCheckoutAbandoned() {
+  trackEvent('checkout_abandoned')
+}
+
+export function trackExportSuccess(format: string, scale: number) {
+  trackEvent('export_success', { format, scale })
+}
+
 /* ── Identity (à appeler après login) ─────────────────────────────── */
 export function identifyUser(userId: string, email?: string) {
   if (!MP_TOKEN || import.meta.env.DEV) return
@@ -139,6 +153,10 @@ export function trackOrientationChange(orientation: string) {
 
 export function trackImageUpload(side: 'front' | 'back' | 'paste') {
   trackEvent('image_upload', { side })
+}
+
+export function trackFirstImageUpload(side: 'front' | 'back' | 'paste') {
+  trackEvent('first_image_upload', { side })
 }
 
 export function trackTabSwitch(tab: string) {
