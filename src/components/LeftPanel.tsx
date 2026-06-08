@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
+import { createPortal } from 'react-dom'
 import { Icon } from '@/components/ui/icon'
 import { cn } from '@/lib/utils'
 import { SliderRow } from '@/components/SliderRow'
@@ -299,7 +300,9 @@ function LayerRow({ layer, index, isDragging, dropIndicator, onDelete, onRename,
   const [blendOpen,  setBlendOpen]  = useState(false)
   const [moreOpen,   setMoreOpen]   = useState(false)
   const [renaming,   setRenaming]   = useState(false)
+  const [menuPos,    setMenuPos]    = useState<{ top: number; left: number } | null>(null)
   const menuRef      = useRef<HTMLDivElement>(null)
+  const blendBtnRef  = useRef<HTMLButtonElement>(null)
   const moreRef      = useRef<HTMLDivElement>(null)
   const committedRef = useRef<BlendMode>(layer.blendMode ?? 'source-over')
 
@@ -330,16 +333,23 @@ function LayerRow({ layer, index, isDragging, dropIndicator, onDelete, onRename,
     if (!blendOpen) committedRef.current = layer.blendMode ?? 'source-over'
   }, [layer.blendMode, blendOpen])
 
-  function openMenu() { committedRef.current = layer.blendMode ?? 'source-over'; setBlendOpen(true) }
+  function openMenu() {
+    committedRef.current = layer.blendMode ?? 'source-over'
+    const rect = blendBtnRef.current?.getBoundingClientRect()
+    if (rect) setMenuPos({ top: rect.bottom + 4, left: rect.right - 140 })
+    setBlendOpen(true)
+  }
   function closeMenu(commit: boolean) {
     if (!commit) onChangeBlend(committedRef.current)  // revert preview
     setBlendOpen(false)
+    setMenuPos(null)
   }
 
   useEffect(() => {
     if (!blendOpen) return
     const handler = (e: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) closeMenu(false)
+      if (menuRef.current && !menuRef.current.contains(e.target as Node) &&
+          blendBtnRef.current && !blendBtnRef.current.contains(e.target as Node)) closeMenu(false)
     }
     document.addEventListener('mousedown', handler)
     return () => document.removeEventListener('mousedown', handler)
@@ -410,8 +420,9 @@ function LayerRow({ layer, index, isDragging, dropIndicator, onDelete, onRename,
         )}
 
         {/* Blend mode — icône opacity, pas de bg */}
-        <div ref={menuRef} className="relative flex-shrink-0">
+        <div className="relative flex-shrink-0">
           <button
+            ref={blendBtnRef}
             title="Blend mode"
             onClick={() => blendOpen ? closeMenu(false) : openMenu()}
             className={cn(
@@ -421,8 +432,12 @@ function LayerRow({ layer, index, isDragging, dropIndicator, onDelete, onRename,
           >
             <Icon name="opacity" size={16} />
           </button>
-          {blendOpen && (
-            <div className="absolute right-0 bottom-full mb-1 z-50 w-[140px] bg-[#1a1a1a] border border-[#2a2a2a] rounded-[10px] overflow-hidden shadow-xl py-1">
+          {blendOpen && menuPos && createPortal(
+            <div
+              ref={menuRef}
+              className="fixed z-[9999] w-[140px] bg-[#1a1a1a] border border-[#2a2a2a] rounded-[10px] shadow-xl py-1"
+              style={{ top: menuPos.top, left: menuPos.left, maxHeight: '320px', overflowY: 'auto', scrollbarWidth: 'none' }}
+            >
               {BLEND_MODES.map((m, i) =>
                 'sep' in m
                   ? <div key={`sep-${i}`} className="h-px bg-white/[0.08] my-1" />
@@ -443,7 +458,8 @@ function LayerRow({ layer, index, isDragging, dropIndicator, onDelete, onRename,
                     </button>
                   )
               )}
-            </div>
+            </div>,
+            document.body
           )}
         </div>
 
