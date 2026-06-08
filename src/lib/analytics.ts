@@ -61,6 +61,23 @@ export function trackEvent(
   }
 }
 
+/* ── Debounced event helper (pour sliders/color pickers) ────────── */
+const _debounceTimers = new Map<string, ReturnType<typeof setTimeout>>()
+
+export function trackEventDebounced(
+  name:    string,
+  params?: Record<string, string | number | boolean>,
+  delay = 800,
+) {
+  const key = name + JSON.stringify(params ? Object.keys(params) : [])
+  const existing = _debounceTimers.get(key)
+  if (existing) clearTimeout(existing)
+  _debounceTimers.set(key, setTimeout(() => {
+    trackEvent(name, params)
+    _debounceTimers.delete(key)
+  }, delay))
+}
+
 /* ── Identity (à appeler après login) ─────────────────────────────── */
 export function identifyUser(userId: string, email?: string) {
   if (!MP_TOKEN || import.meta.env.DEV) return
@@ -133,7 +150,7 @@ export function trackCameraModeChange(mode: string) {
 }
 
 export function trackAddWorkspace() {
-  trackEvent('add_workspace')
+  trackEvent('page_add')
 }
 
 /* ── Pages ─────────────────────────────────────────────────────────── */
@@ -173,17 +190,17 @@ export function trackLayerBlendMode(mode: string) {
 }
 
 export function trackLayerOpacity(opacity: number) {
-  trackEvent('layer_opacity_change', { opacity })
+  trackEventDebounced('layer_opacity_change', { opacity })
 }
 
 /* ── Card colors ───────────────────────────────────────────────────── */
 
 export function trackCardColorChange() {
-  trackEvent('card_color_change')
+  trackEventDebounced('card_color_change')
 }
 
 export function trackEdgeColorChange() {
-  trackEvent('edge_color_change')
+  trackEventDebounced('edge_color_change')
 }
 
 /* ── Texture / Finish ──────────────────────────────────────────────── */
@@ -195,15 +212,15 @@ export function trackTextureChange(finish: string) {
 /* ── Lights & Shadow ───────────────────────────────────────────────── */
 
 export function trackLightIntensityChange(value: number) {
-  trackEvent('light_intensity_change', { value })
+  trackEventDebounced('light_intensity_change', { value })
 }
 
 export function trackLightAngleChange(value: number) {
-  trackEvent('light_angle_change', { value })
+  trackEventDebounced('light_angle_change', { value })
 }
 
 export function trackShadowChange(param: 'opacity' | 'blur', value: number) {
-  trackEvent('shadow_change', { param, value })
+  trackEventDebounced('shadow_change', { param, value })
 }
 
 /* ── Tab switch (Face) ─────────────────────────────────────────────── */

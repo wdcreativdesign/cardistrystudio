@@ -17,7 +17,7 @@ import { contrastColor } from './lib/utils'
 import { randomizePoses } from './lib/randomize'
 import { supabase } from './lib/supabase'
 import { useCredits, EXPORT_COST } from './hooks/useCredits'
-import { trackExport, trackOpenBuyCredits, trackPurchase, trackSignOut, identifyUser, trackRandomize, trackReset, trackDisplayCountChange, trackOrientationChange, trackImageUpload, trackTabSwitch, trackCameraModeChange, trackAddWorkspace, trackDeletePage, trackRenamePage, trackReorderPages } from './lib/analytics'
+import { trackExport, trackOpenBuyCredits, trackPurchase, identifyUser, trackRandomize, trackReset, trackDisplayCountChange, trackOrientationChange, trackImageUpload, trackTabSwitch, trackCameraModeChange, trackAddWorkspace, trackDeletePage, trackRenamePage, trackReorderPages } from './lib/analytics'
 import { DEFAULT_FRONT_URL } from './constants'
 
 /* ── Default card settings ───────────────────────────────────────── */
