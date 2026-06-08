@@ -384,7 +384,7 @@ function ExportTab({
   const exportH = cssSize ? Math.round(cssSize.h * scale) : null
 
   return (
-    <div className="flex flex-col flex-1 overflow-y-auto" style={{ scrollbarWidth: 'none' }}>
+    <div className="flex flex-col flex-1 overflow-y-auto relative" style={{ scrollbarWidth: 'none' }}>
 
       {/* Preview */}
       <Section title="Preview">
@@ -468,8 +468,11 @@ function ExportTab({
         </div>
       </Section>
 
-      {/* Export button */}
-      <div className="px-4 py-4 flex flex-col items-center gap-1.5">
+      {/* Spacer so content doesn't hide under sticky CTA */}
+      <div className="h-[88px] shrink-0" />
+
+      {/* Export button — sticky bottom */}
+      <div className="sticky bottom-0 px-4 py-4 flex flex-col items-center gap-1.5 bg-[#111] border-t border-white/[0.06]">
         <AuroraExportButton format={format} onExport={() => onExport({ format, scale, showShadow })} />
         <p className="text-[11px] text-[#555] font-medium">Cost 5 tokens</p>
       </div>
