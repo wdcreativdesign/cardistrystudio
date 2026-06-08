@@ -3,8 +3,7 @@ import { type User } from '@supabase/supabase-js'
 import { supabase } from '@/lib/supabase'
 import { trackMagicLinkSent, trackBuyWideScreenClick } from '@/lib/analytics'
 
-// Remplace par l'ID de la vidéo YouTube quand dispo (ex: "dQw4w9WgXcQ")
-const DEMO_VIDEO_ID: string | null = null
+const DEMO_VIDEO_ID: string | null = 'rPIU2nXtAcw'
 
 export function SmallScreenBlock({ currentUser }: { currentUser: User | null }) {
   const [email, setEmail]     = useState('')
